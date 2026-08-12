@@ -1,0 +1,298 @@
+/* =========================================
+   GOAL HUB — "How can I help you today?"
+========================================= */
+
+.goal-hub {
+  width: 100%;
+  background: linear-gradient(180deg, #fff 0%, #faf3ef 100%);
+  border-bottom: 1px solid #eee1de;
+}
+
+.goal-hub-inner {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 56px 7vw 52px;
+  text-align: center;
+}
+
+.goal-hub-title {
+  margin: 0 0 10px;
+  color: #222;
+  font-size: clamp(28px, 3.4vw, 42px);
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  animation: goal-fade-in 0.5s ease both;
+}
+
+.goal-hub-subtitle {
+  margin: 0 0 36px;
+  color: #707070;
+  font-size: 15px;
+  animation: goal-fade-in 0.5s ease 0.08s both;
+}
+
+.goal-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.goal-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+
+  padding: 22px 20px 20px;
+
+  background: #fff;
+  border: 1px solid #ece0d6;
+  border-radius: 12px;
+
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+
+  animation: goal-card-in 0.45s ease both;
+}
+
+.goal-card:hover,
+.goal-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: #8a1c2f;
+  box-shadow: 0 10px 26px rgba(138, 28, 47, 0.12);
+  outline: none;
+}
+
+.goal-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+.goal-card-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.goal-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  line-height: 1.4;
+}
+
+.goal-card-arrow {
+  position: absolute;
+  top: 20px;
+  inset-inline-end: 18px;
+  color: #c9a6ac;
+  font-size: 15px;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+[dir='rtl'] .goal-card-arrow {
+  transform: translateX(4px) scaleX(-1);
+}
+
+.goal-card:hover .goal-card-arrow,
+.goal-card:focus-visible .goal-card-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+[dir='rtl'] .goal-card:hover .goal-card-arrow,
+[dir='rtl'] .goal-card:focus-visible .goal-card-arrow {
+  transform: translateX(0) scaleX(-1);
+}
+
+.goal-card-muted {
+  background: #faf7f4;
+  border-style: dashed;
+}
+
+@keyframes goal-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes goal-card-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   "I'm not sure" guided chooser
+========================================= */
+
+.goal-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(30, 20, 18, 0.42);
+  backdrop-filter: blur(2px);
+
+  animation: goal-fade-in 0.18s ease both;
+}
+
+.goal-modal {
+  width: 100%;
+  max-width: 440px;
+
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px 28px;
+
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+
+  animation: goal-modal-in 0.24s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes goal-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.goal-modal-close {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;
+
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: #f4efec;
+  color: #666;
+  font-size: 18px;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: background 0.15s ease;
+}
+
+.goal-modal-close:hover {
+  background: #ece0d6;
+}
+
+.goal-modal-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.goal-dot {
+  width: 20px;
+  height: 4px;
+  border-radius: 2px;
+  background: #ece0d6;
+  transition: background 0.2s ease;
+}
+
+.goal-dot.active {
+  background: #8a1c2f;
+}
+
+.goal-modal-step {
+  animation: goal-fade-in 0.22s ease both;
+}
+
+.goal-modal-step h2 {
+  margin: 0 0 18px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+
+.goal-modal-back {
+  border: none;
+  background: none;
+  padding: 0;
+  margin-bottom: 10px;
+  color: #8a1c2f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.goal-modal-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.goal-modal-option {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+
+  background: #faf7f4;
+  border: 1px solid #ece0d6;
+  border-radius: 10px;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+[dir='rtl'] .goal-modal-option {
+  text-align: right;
+}
+
+.goal-modal-option:hover,
+.goal-modal-option:focus-visible {
+  border-color: #8a1c2f;
+  background: #fff;
+  transform: translateX(2px);
+  outline: none;
+}
+
+[dir='rtl'] .goal-modal-option:hover,
+[dir='rtl'] .goal-modal-option:focus-visible {
+  transform: translateX(-2px);
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 860px) {
+  .goal-hub-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .goal-hub-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .goal-hub-inner {
+    padding: 40px 6vw 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goal-card,
+  .goal-hub-title,
+  .goal-hub-subtitle,
+  .goal-modal,
+  .goal-modal-step,
+  .goal-modal-backdrop {
+    animation: none;
+  }
+}

@@ -1,0 +1,1000 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #222;
+  background: #faf6f1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #faf6f1;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+}
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+  background: #faf6f1;
+}
+
+/* =========================================
+   GOVERNMENT BRANDING
+========================================= */
+
+.government-header {
+  width: 100%;
+  height: 105px;
+  padding: 0 55px;
+
+  background: #fff;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+
+  border-bottom: 1px solid #dedede;
+}
+
+.government-logo {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+}
+
+.proud-uae-logo {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gdrfa-logo {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+}
+
+.government-logo img {
+  width: 180px;
+  max-height: 75px;
+  object-fit: contain;
+}
+
+.proud-uae-logo img {
+  width: 115px;
+  max-height: 78px;
+  object-fit: contain;
+}
+
+.gdrfa-logo img {
+  width: 190px;
+  max-height: 78px;
+  object-fit: contain;
+}
+
+/* =========================================
+   NAVIGATION
+========================================= */
+
+.header {
+  width: 100%;
+  background: #ffffff;
+  border-bottom: 1px solid #d9d9d9;
+}
+
+.header-inner {
+  width: 100%;
+  min-height: 64px;
+
+  padding: 0 55px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 38px;
+  height: 64px;
+}
+
+.main-nav a {
+  position: relative;
+
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+
+  color: #333;
+
+  font-size: 13px;
+  font-weight: 500;
+
+  transition: color 0.2s ease;
+}
+
+.main-nav a:hover {
+  color: #8a1c2f;
+}
+
+.main-nav a.active {
+  color: #8a1c2f;
+  font-weight: 700;
+}
+
+.main-nav a.active::after {
+  content: "";
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 3px;
+
+  background: #8a1c2f;
+}
+
+/* =========================================
+   HEADER ACTIONS
+========================================= */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-button {
+  border: none;
+  background: transparent;
+
+  color: #444;
+
+  padding: 8px 12px;
+
+  font-size: 12px;
+}
+
+.language-button:hover {
+  color: #8a1c2f;
+}
+
+.search-button,
+.notification-button {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #d8d8d8;
+  border-radius: 50%;
+
+  background: #fff;
+
+  color: #555;
+
+  font-size: 17px;
+}
+
+.search-button:hover,
+.notification-button:hover {
+  color: #8a1c2f;
+  border-color: #8a1c2f;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-left: 8px;
+}
+
+.profile-avatar {
+  width: 37px;
+  height: 37px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #8a1c2f;
+  color: white;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.profile strong {
+  display: block;
+
+  color: #333;
+  font-size: 11px;
+}
+
+.profile span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #888;
+  font-size: 9px;
+}
+
+/* =========================================
+   HERO
+========================================= */
+
+.hero-section {
+  width: 100%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #faf3ef 100%
+    );
+
+  border-bottom: 1px solid #eee1de;
+}
+
+.hero-inner {
+  width: 100%;
+  max-width: 900px;
+
+  padding: 64px 7vw 56px;
+
+  margin: 0 auto;
+}
+
+.hero-content {
+  max-width: 640px;
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+
+  color: #8a1c2f;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 1.6px;
+}
+
+.hero-content h1 {
+  margin: 0;
+
+  color: #222;
+
+  font-size: clamp(42px, 4vw, 64px);
+
+  line-height: 1.1;
+
+  font-weight: 500;
+
+  letter-spacing: -1.5px;
+}
+
+.hero-description {
+  max-width: 650px;
+
+  margin: 25px 0 32px;
+
+  color: #707070;
+
+  font-size: 15px;
+
+  line-height: 1.8;
+}
+
+.hero-buttons {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 46px;
+
+  padding: 0 25px;
+
+  border-radius: 3px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  transition: 0.2s ease;
+}
+
+.primary-button {
+  background: #8a1c2f;
+  border: 1px solid #8a1c2f;
+  color: #fff;
+}
+
+.primary-button:hover {
+  background: #6f1626;
+}
+
+.secondary-button {
+  background: #fff;
+  border: 1px solid #8a1c2f;
+  color: #8a1c2f;
+}
+
+.secondary-button:hover {
+  background: #faf0f1;
+}
+
+/* =========================================
+   QUICK ACTIONS
+========================================= */
+
+.quick-actions-section {
+  width: 100%;
+  background: #f6ece4;
+  border-bottom: 1px solid #ece0d6;
+}
+
+.quick-actions-inner {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 7vw 48px;
+}
+
+.quick-actions-inner .section-label {
+  margin: 0 0 18px;
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.quick-action-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+
+  padding: 20px;
+
+  background: #fff;
+  border: 1px solid #ece0d6;
+  border-radius: 8px;
+
+  transition: 0.2s ease;
+}
+
+.quick-action-tile:hover {
+  border-color: #8a1c2f;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
+}
+
+.quick-action-icon {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 4px;
+
+  border-radius: 50%;
+
+  background: #f6ecd9;
+  color: #a97c1f;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.quick-action-tile:nth-child(even) .quick-action-icon {
+  background: #f3e6e8;
+  color: #8a1c2f;
+}
+
+.quick-action-tile strong {
+  font-size: 13px;
+  color: #262626;
+}
+
+.quick-action-tile span {
+  font-size: 11px;
+  color: #888;
+  line-height: 1.5;
+}
+
+/* =========================================
+   GENERAL SECTIONS
+========================================= */
+
+.section {
+  width: 100%;
+
+  padding: 75px 7vw;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  margin-bottom: 28px;
+}
+
+.section-label {
+  margin: 0 0 8px;
+
+  color: #8a1c2f;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  letter-spacing: 1.4px;
+}
+
+.section-heading h2 {
+  margin: 0;
+
+  color: #252525;
+
+  font-size: 28px;
+
+  font-weight: 500;
+}
+
+.section-heading > a {
+  color: #8a1c2f;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.outline-button {
+  min-height: 40px;
+
+  padding: 0 17px;
+
+  background: #fff;
+
+  border: 1px solid #8a1c2f;
+
+  border-radius: 3px;
+
+  color: #8a1c2f;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.outline-button:hover {
+  background: #faf0f1;
+}
+
+/* =========================================
+   SERVICES
+========================================= */
+
+.service-grid {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 18px;
+}
+
+.service-card {
+  min-height: 235px;
+
+  padding: 28px;
+
+  background: #fff;
+
+  border: 1px solid #dedede;
+
+  transition: 0.2s ease;
+}
+
+.service-card:hover {
+  border-color: #8a1c2f;
+
+  transform: translateY(-3px);
+
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+}
+
+.service-icon {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 20px;
+
+  background: #f6ecd9;
+
+  color: #a97c1f;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.service-card:nth-child(even) .service-icon {
+  background: #f3e6e8;
+  color: #8a1c2f;
+}
+
+.service-card h3 {
+  margin: 0 0 10px;
+
+  color: #333;
+
+  font-size: 15px;
+}
+
+.service-card p {
+  margin: 0 0 22px;
+
+  color: #777;
+
+  font-size: 11px;
+
+  line-height: 1.7;
+}
+
+.service-card span {
+  color: #8a1c2f;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+/* =========================================
+   APPLICATIONS
+========================================= */
+
+.applications-section {
+  padding-top: 0;
+}
+
+.application-table {
+  width: 100%;
+
+  background: #fff;
+
+  border: 1px solid #ddd;
+}
+
+.table-header,
+.application-row {
+  display: grid;
+
+  grid-template-columns: 2fr 1.5fr 1fr 0.9fr;
+
+  align-items: center;
+
+  gap: 20px;
+}
+
+.table-header {
+  min-height: 48px;
+
+  padding: 0 22px;
+
+  background: #f2f4f3;
+
+  color: #777;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.application-row {
+  min-height: 78px;
+
+  padding: 15px 22px;
+
+  border-top: 1px solid #eee;
+
+  color: #666;
+
+  font-size: 10px;
+}
+
+.application-row strong {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: #333;
+
+  font-size: 11px;
+}
+
+.application-row small {
+  color: #999;
+
+  font-size: 9px;
+}
+
+.status {
+  width: fit-content;
+
+  padding: 6px 11px;
+
+  border-radius: 20px;
+
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.status.processing {
+  background: #fff4d7;
+  color: #98711e;
+}
+
+.status.approved {
+  background: #e7f4ed;
+  color: #28754a;
+}
+
+.status.pending {
+  background: #f9e9e9;
+  color: #9b2635;
+}
+
+/* =========================================
+   HELP
+========================================= */
+
+.information {
+  width: calc(100% - 14vw);
+
+  margin: 0 7vw 70px;
+
+  padding: 48px 55px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  background: #8a1c2f;
+
+  color: white;
+}
+
+.information .section-label {
+  color: #e6bcc3;
+}
+
+.information h2 {
+  max-width: 600px;
+
+  margin: 0 0 10px;
+
+  color: white;
+
+  font-size: 28px;
+
+  font-weight: 500;
+}
+
+.information > div:first-child > p:last-child {
+  color: #f0d9dc;
+
+  font-size: 12px;
+}
+
+.information-buttons {
+  display: flex;
+
+  gap: 10px;
+}
+
+.information-buttons button {
+  min-height: 42px;
+
+  padding: 0 18px;
+
+  border-radius: 3px;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.information-buttons button:first-child {
+  background: white;
+
+  border: 1px solid white;
+
+  color: #8a1c2f;
+}
+
+.information-buttons button:last-child {
+  background: transparent;
+
+  border: 1px solid white;
+
+  color: white;
+}
+
+/* =========================================
+   FOOTER
+========================================= */
+
+footer {
+  width: 100%;
+
+  background: #242424;
+
+  color: white;
+}
+
+.footer-inner {
+  width: 100%;
+
+  padding: 38px 7vw;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+}
+
+.footer-inner strong {
+  color: white;
+
+  font-size: 13px;
+}
+
+.footer-inner p {
+  max-width: 420px;
+
+  margin: 7px 0 0;
+
+  color: #999;
+
+  font-size: 9px;
+}
+
+.footer-links {
+  display: flex;
+
+  gap: 25px;
+}
+
+.footer-links a {
+  color: #aaa;
+
+  font-size: 9px;
+}
+
+.footer-links a:hover {
+  color: white;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 1100px) {
+  .hero-inner {
+    padding: 56px 5vw;
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .service-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .section {
+    padding-left: 5vw;
+    padding-right: 5vw;
+  }
+
+  .information {
+    width: calc(100% - 10vw);
+    margin-left: 5vw;
+    margin-right: 5vw;
+  }
+}
+
+@media (max-width: 850px) {
+  .government-header {
+    height: 82px;
+
+    padding: 0 20px;
+  }
+
+  .government-logo img {
+    width: 135px;
+  }
+
+  .proud-uae-logo img {
+    width: 85px;
+  }
+
+  .gdrfa-logo img {
+    width: 145px;
+  }
+
+  .main-nav {
+    display: none;
+  }
+
+  .header-inner {
+    justify-content: flex-end;
+    padding: 0 20px;
+  }
+
+  .hero-content h1 {
+    font-size: 42px;
+  }
+
+  .table-header {
+    display: none;
+  }
+
+  .application-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .information {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 25px;
+  }
+}
+
+@media (max-width: 600px) {
+  .government-header {
+    height: 72px;
+
+    padding: 0 12px;
+  }
+
+  .government-logo img {
+    width: 95px;
+  }
+
+  .proud-uae-logo img {
+    width: 62px;
+  }
+
+  .gdrfa-logo img {
+    width: 105px;
+  }
+
+  .profile {
+    display: none;
+  }
+
+  .hero-inner {
+    padding: 45px 18px;
+  }
+
+  .hero-content h1 {
+    font-size: 32px;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+  }
+
+  .section {
+    padding: 45px 18px;
+  }
+
+  .section-heading {
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 12px;
+  }
+
+  .service-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .application-row {
+    grid-template-columns: 1fr;
+
+    gap: 8px;
+  }
+
+  .information {
+    width: calc(100% - 36px);
+
+    margin-left: 18px;
+    margin-right: 18px;
+
+    padding: 32px 24px;
+  }
+
+  .information-buttons {
+    width: 100%;
+
+    flex-direction: column;
+  }
+
+  .information-buttons button {
+    width: 100%;
+  }
+
+  .footer-inner {
+    padding: 30px 18px;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 25px;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+  }
+}
