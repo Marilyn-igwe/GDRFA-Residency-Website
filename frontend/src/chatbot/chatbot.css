@@ -346,24 +346,30 @@
   background: #fff;
 }
 
-.chat-input-row input {
+.chat-input-row textarea {
+  box-sizing: border-box;
   min-width: 0;
   flex: 1;
+  max-height: 120px;
   padding: 9px 13px;
   border: 1px solid #ddd;
-  border-radius: 20px;
+  border-radius: 18px;
   background: #fff;
   color: #222;
+  font-family: inherit;
   font-size: 12px;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
 }
 
-.chat-input-row input:focus {
+.chat-input-row textarea:focus {
   border-color: #8a1c2f;
   outline: none;
   box-shadow: 0 0 0 2px rgba(138, 28, 47, 0.1);
 }
 
-.chat-input-row input:disabled {
+.chat-input-row textarea:disabled {
   background: #f4f4f4;
   color: #888;
   cursor: not-allowed;

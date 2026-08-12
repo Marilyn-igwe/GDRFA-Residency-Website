@@ -133,6 +133,14 @@ export function ChatWidget() {
   const [chatEnded, setChatEnded] = useState(false)
 
   const scrollRef = useRef(null)
+  const inputRef = useRef(null)
+
+useEffect(() => {
+  if (inputRef.current) {
+    inputRef.current.style.height = 'auto'
+    inputRef.current.style.height = `${inputRef.current.scrollHeight}px`
+  }
+}, [input]) 
 
   useEffect(() => {
     function openChat() {
@@ -162,6 +170,15 @@ export function ChatWidget() {
       tts.cancel()
     }
   }, [open])
+
+  useEffect(() => {
+    // Mirror the running transcript into the input box live, so
+    // the user sees (and can fix) the text as they speak, instead
+    // of only after tapping "Finish speaking".
+    if (recognition.listening) {
+      setInput(recognition.interimText)
+    }
+  }, [recognition.interimText, recognition.listening])
 
   function stopAllAudio() {
     recognition.cancel()
@@ -243,7 +260,10 @@ export function ChatWidget() {
     if (chatEnded || loading) return
 
     if (recognition.listening) {
-      // Finalize and send everything spoken so far.
+      // Finalize whatever was captured so far. This does NOT
+      // send the message — it just stops listening and hands
+      // the transcript back via the start() callback below, so
+      // the user can review/edit it in the input box first.
       recognition.stop()
       return
     }
@@ -253,7 +273,10 @@ export function ChatWidget() {
 
     recognition.start((transcript) => {
       if (transcript.trim()) {
-        sendMessage(transcript)
+        // Drop the transcript into the input box instead of
+        // sending it straight away, so the user can review or
+        // edit what was heard before submitting it themselves.
+        setInput(transcript)
       }
     })
   }
@@ -297,6 +320,14 @@ export function ChatWidget() {
                 <Icon type="end" />
               </button>
 
+              <button
+                type="button"
+                class="chat-close"
+                onClick={closeChat}
+                title="Close"
+              >
+                <Icon type="close" />
+              </button>
             </div>
           </header>
 
@@ -410,19 +441,17 @@ export function ChatWidget() {
               </button>
             )}
 
-            <input
-              type="text"
-              value={input}
-              disabled={chatEnded}
-              placeholder={
-                chatEnded
-                  ? 'Start or continue the chat'
-                  : ct.placeholder
-              }
-              onInput={(event) =>
-                setInput(event.target.value)
-              }
-            />
+            <textarea
+            rows={1}
+            value={input}
+            disabled={chatEnded}
+            placeholder={chatEnded ? 'Start or continue the chat' : ct.placeholder}
+            onInput={(event) => {
+              setInput(event.target.value)
+              event.target.style.height = 'auto'
+              event.target.style.height = `${event.target.scrollHeight}px`
+            }}
+          />
 
             <button
               type="button"
@@ -462,9 +491,7 @@ export function ChatWidget() {
 
           {recognition.listening && (
             <div class="chat-listening">
-              <span>
-                Listening… {recognition.interimText}
-              </span>
+              <span>Listening…</span>
 
               <button
                 type="button"
