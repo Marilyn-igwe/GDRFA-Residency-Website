@@ -13,7 +13,7 @@ export function useSpeechRecognition({ lang = 'en-US' } = {}) {
   const callbackRef = useRef(null)
   const finalRef = useRef('')
   const interimRef = useRef('')
-  const stoppingRef = useRef(false)
+  const manualStopRef = useRef(false) // true only when the user asked to stop
   const submittedRef = useRef(false)
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function useSpeechRecognition({ lang = 'en-US' } = {}) {
     const recognition = new Recognition()
 
     recognition.lang = lang
-    recognition.continuous = false
+    recognition.continuous = true
     recognition.interimResults = true
     recognition.maxAlternatives = 1
 
@@ -35,7 +35,7 @@ export function useSpeechRecognition({ lang = 'en-US' } = {}) {
       submittedRef.current = true
       finalRef.current = ''
       interimRef.current = ''
-      stoppingRef.current = false
+      manualStopRef.current = false
 
       setListening(false)
       setInterimText('')
@@ -62,22 +62,30 @@ export function useSpeechRecognition({ lang = 'en-US' } = {}) {
       }
 
       interimRef.current = interim
-      setInterimText(interim)
+
+      // Expose the running transcript (final + interim so far)
+      // so the caller can mirror it live into a text field.
+      setInterimText(
+        `${finalRef.current} ${interim}`.trim()
+      )
     }
 
-    recognition.onspeechend = () => {
-      if (stoppingRef.current) return
-
-      stoppingRef.current = true
+    // The browser can end a session on its own (e.g. a silence
+    // timeout) even mid-thought. If the user didn't ask to stop,
+    // restart quietly instead of finalizing — this is what lets
+    // the user (not the browser) decide when they're done.
+    recognition.onend = () => {
+      if (manualStopRef.current || submittedRef.current) {
+        submitOnce()
+        return
+      }
 
       try {
-        recognition.stop()
+        recognition.start()
       } catch {
         submitOnce()
       }
     }
-
-    recognition.onend = submitOnce
 
     recognition.onerror = (event) => {
       if (event.error === 'aborted') {
@@ -85,17 +93,26 @@ export function useSpeechRecognition({ lang = 'en-US' } = {}) {
         return
       }
 
+      // Recoverable hiccups — a silence timeout or the browser's
+      // background reconnect — while the user hasn't tapped stop.
+      // Let onend fire next and restart the session there instead
+      // of finalizing and losing what was already captured.
+      if (
+        (event.error === 'no-speech' || event.error === 'network') &&
+        !manualStopRef.current
+      ) {
+        return
+      }
+
       submittedRef.current = true
       finalRef.current = ''
       interimRef.current = ''
-      stoppingRef.current = false
+      manualStopRef.current = false
 
       setListening(false)
       setInterimText('')
 
-      if (event.error !== 'no-speech') {
-        console.warn('Speech recognition error:', event.error)
-      }
+      console.warn('Speech recognition error:', event.error)
     }
 
     recognitionRef.current = recognition
@@ -104,7 +121,6 @@ export function useSpeechRecognition({ lang = 'en-US' } = {}) {
       submittedRef.current = true
 
       recognition.onresult = null
-      recognition.onspeechend = null
       recognition.onend = null
       recognition.onerror = null
 
@@ -125,7 +141,7 @@ export function useSpeechRecognition({ lang = 'en-US' } = {}) {
     callbackRef.current = onFinal
     finalRef.current = ''
     interimRef.current = ''
-    stoppingRef.current = false
+    manualStopRef.current = false
     submittedRef.current = false
 
     setInterimText('')
@@ -143,24 +159,24 @@ export function useSpeechRecognition({ lang = 'en-US' } = {}) {
   const stop = useCallback(() => {
     const recognition = recognitionRef.current
 
-    if (!recognition || !listening || stoppingRef.current) return
+    if (!recognition || !listening) return
 
-    stoppingRef.current = true
+    manualStopRef.current = true
 
     try {
       // stop() finalizes the speech captured so far.
       recognition.stop()
     } catch {
-      stoppingRef.current = false
+      manualStopRef.current = false
       setListening(false)
     }
   }, [listening])
 
   const cancel = useCallback(() => {
+    manualStopRef.current = true
     submittedRef.current = true
     finalRef.current = ''
     interimRef.current = ''
-    stoppingRef.current = false
 
     setListening(false)
     setInterimText('')
