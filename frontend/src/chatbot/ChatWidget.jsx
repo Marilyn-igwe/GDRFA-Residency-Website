@@ -297,14 +297,6 @@ export function ChatWidget() {
                 <Icon type="end" />
               </button>
 
-              <button
-                type="button"
-                class="chat-close"
-                onClick={closeChat}
-                title="Close"
-              >
-                <Icon type="close" />
-              </button>
             </div>
           </header>
 
