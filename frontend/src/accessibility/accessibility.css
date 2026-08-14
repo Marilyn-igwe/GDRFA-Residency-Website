@@ -1,0 +1,214 @@
+/* =========================================
+   TEXT SIZE SCALING
+   Applied as a class on the top-level .app container. `zoom` scales the
+   whole rendered page (text, spacing, buttons) the same way native
+   browser zoom does — needed because most of this app's CSS is in fixed
+   px, not rem, so a root font-size change alone would not reach it.
+========================================= */
+
+.app.gd-scale-large {
+  zoom: 1.15;
+}
+
+.app.gd-scale-xlarge {
+  zoom: 1.3;
+}
+
+/* =========================================
+   HIGH CONTRAST MODE
+   A blanket rule on every element inside .app, rather than a hand-picked
+   list of card/component class names — the site has many differently-
+   named card/row/panel classes (goal-card, service-card, hc-category-card,
+   chat-bubble, application-row, ...) and missing even one leaves invisible
+   black-on-black text, which is exactly the bug this replaced. The
+   accessibility widget itself is excluded so its own colors stay intact
+   regardless of the toggle.
+========================================= */
+
+.app.gd-high-contrast *:not(#gd-a11y-widget-root):not(#gd-a11y-widget-root *) {
+  background-color: #fff !important;
+  color: #000 !important;
+  /* Only affects elements that already have a border set — a plain span
+     with no border defined still renders with no border. */
+  border-color: #000 !important;
+}
+
+.app.gd-high-contrast a {
+  color: #0b3d91 !important;
+  text-decoration: underline !important;
+}
+
+.app.gd-high-contrast button:not(#gd-a11y-widget-root *) {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #000 !important;
+}
+
+.app.gd-high-contrast button:disabled:not(#gd-a11y-widget-root *) {
+  background: #666 !important;
+  border-color: #666 !important;
+}
+
+.app.gd-high-contrast input,
+.app.gd-high-contrast textarea,
+.app.gd-high-contrast select {
+  border: 2px solid #000 !important;
+}
+
+.app.gd-high-contrast *:focus-visible {
+  outline: 3px solid #d40000 !important;
+  outline-offset: 2px !important;
+}
+
+/* =========================================
+   ACCESSIBILITY WIDGET
+========================================= */
+
+.gd-a11y-root {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 998;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.gd-a11y-fab {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: #0b3d91;
+  color: #fff;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.gd-a11y-fab:hover {
+  transform: scale(1.06);
+}
+
+.gd-a11y-panel {
+  margin-bottom: 12px;
+  width: 260px;
+  max-width: 80vw;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gd-a11y-panel-title {
+  font-size: 14px;
+  color: #0b3d91;
+  margin-bottom: 2px;
+}
+
+.gd-a11y-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gd-a11y-row-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+
+.gd-a11y-textsize-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.gd-a11y-btn-small {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #0b3d91;
+  background: #fff;
+  color: #0b3d91;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gd-a11y-btn-small:hover:not(:disabled) {
+  background: #0b3d91;
+  color: #fff;
+}
+
+.gd-a11y-btn-small:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.gd-a11y-minus,
+.gd-a11y-plus {
+  font-size: 11px;
+  margin-left: 1px;
+}
+
+.gd-a11y-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #faf7f7;
+  color: #222;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.gd-a11y-toggle-row.active {
+  background: #0b3d91;
+  color: #fff;
+  border-color: #0b3d91;
+}
+
+.gd-a11y-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.gd-a11y-switch {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.gd-a11y-hint {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #777;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+@media (max-width: 480px) {
+  .gd-a11y-root {
+    left: 12px;
+    bottom: 12px;
+  }
+  .gd-a11y-panel {
+    width: 230px;
+  }
+}

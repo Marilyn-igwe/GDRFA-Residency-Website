@@ -1,5 +1,11 @@
 import { render } from 'preact'
 import './index.css'
 import { App } from './app.jsx'
+import { AccessibilityProvider } from './accessibility/AccessibilityContext'
 
-render(<App />, document.getElementById('app'))
+render(
+  <AccessibilityProvider>
+    <App />
+  </AccessibilityProvider>,
+  document.getElementById('app')
+)

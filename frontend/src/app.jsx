@@ -12,6 +12,9 @@ import { LanguageWelcomeScreen } from './language/LanguageWelcomeScreen'
 import { getLanguage } from './language/languages'
 import { translations } from './language/translations'
 import { LanguageContext, buildLanguageContextValue } from './language/LanguageContext'
+import { useAccessibility } from './accessibility/AccessibilityContext'
+import { AccessibilityWidget } from './accessibility/AccessibilityWidget'
+import './accessibility/accessibility.css'
 import './app.css'
 
 const LANG_CHOSEN_KEY = 'gdrfa_lang_chosen'
@@ -85,10 +88,18 @@ export function App() {
   // language without needing it threaded through as a prop everywhere.
   const langContextValue = buildLanguageContextValue(langCode)
 
+  // Text size + high contrast are app-wide, driven by AccessibilityProvider
+  // in main.jsx. Applied as classes on the single top-level .app wrapper
+  // shared by every view below.
+  const { scale, highContrast } = useAccessibility()
+  const appClass = ['app', scale !== 'normal' ? `gd-scale-${scale}` : '', highContrast ? 'gd-high-contrast' : '']
+    .filter(Boolean)
+    .join(' ')
+
   if (view === 'humanitarian' || view === 'committee') {
     return (
       <LanguageContext.Provider value={langContextValue}>
-      <div class="app">
+      <div class={appClass}>
         <div class="government-header">
           <div class="government-logo">
             <img src={governmentLogo} alt="Government of Dubai" />
@@ -111,6 +122,7 @@ export function App() {
 
         {view === 'humanitarian' ? <HumanitarianCaseForm /> : <CommitteeDashboard />}
         {view === 'humanitarian' ? <ChatWidget /> : <EmployeeAssistant />}
+        <AccessibilityWidget />
       </div>
       </LanguageContext.Provider>
     )
@@ -119,7 +131,7 @@ export function App() {
   if (showBooking) {
     return (
       <LanguageContext.Provider value={langContextValue}>
-      <div class="app">
+      <div class={appClass}>
         <div class="government-header">
           <div class="government-logo">
             <img src={governmentLogo} alt="Government of Dubai" />
@@ -142,6 +154,7 @@ export function App() {
 
         <BookingFlow />
         <ChatWidget />
+        <AccessibilityWidget />
       </div>
       </LanguageContext.Provider>
     )
@@ -149,7 +162,7 @@ export function App() {
 
   return (
     <LanguageContext.Provider value={langContextValue}>
-    <div class="app">
+    <div class={appClass}>
       {/* TOP GOVERNMENT BRANDING */}
       <div class="government-header">
         <div class="government-logo">
@@ -293,6 +306,7 @@ export function App() {
       </footer>
 
       <ChatWidget />
+      <AccessibilityWidget />
     </div>
     </LanguageContext.Provider>
   )
