@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'preact/hooks'
-import { listCases, updateCase } from './api'
+import { listCases, updateCase, regenerateAiBrief } from './api'
 import { useLanguage } from '../language/LanguageContext'
 import './humanitarian.css'
 
@@ -19,6 +19,8 @@ export function CommitteeDashboard() {
   const [notesDraft, setNotesDraft] = useState('')
   const [statusDraft, setStatusDraft] = useState('')
   const [saving, setSaving] = useState(false)
+  const [briefRegenerating, setBriefRegenerating] = useState(false)
+  const [briefError, setBriefError] = useState(null)
 
   function refresh() {
     setLoading(true)
@@ -36,6 +38,21 @@ export function CommitteeDashboard() {
     setSelected(c)
     setNotesDraft(c.committeeNotes || '')
     setStatusDraft(c.status)
+    setBriefError(null)
+  }
+
+  async function handleRegenerateBrief() {
+    setBriefRegenerating(true)
+    setBriefError(null)
+    try {
+      const updated = await regenerateAiBrief(selected.reference)
+      setSelected(updated)
+      refresh()
+    } catch (e) {
+      setBriefError(e.message)
+    } finally {
+      setBriefRegenerating(false)
+    }
   }
 
   async function handleSave() {
@@ -119,6 +136,50 @@ export function CommitteeDashboard() {
               <div class="hc-detail-section hc-summary-section">
                 <strong>{dt.summaryLabel}</strong>
                 <p>{selected.summary}</p>
+              </div>
+
+              <div class="hc-detail-section hc-ai-brief-section">
+                <div class="hc-ai-brief-header">
+                  <span class="hc-ai-brief-eyebrow">{dt.aiBriefTitle}</span>
+                  <button
+                    type="button"
+                    class="hc-ai-brief-regenerate"
+                    onClick={handleRegenerateBrief}
+                    disabled={briefRegenerating}
+                  >
+                    {briefRegenerating ? dt.aiBriefRegenerating : dt.aiBriefRegenerate}
+                  </button>
+                </div>
+
+                {briefError && <p class="hc-error">{briefError}</p>}
+
+                {selected.aiBrief ? (
+                  <>
+                    {selected.aiBrief.keyFacts?.length > 0 && (
+                      <div class="hc-ai-brief-block">
+                        <strong>{dt.aiBriefKeyFacts}</strong>
+                        <ul>
+                          {selected.aiBrief.keyFacts.map((f) => (
+                            <li key={f}>{f}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {selected.aiBrief.pointsToVerify?.length > 0 && (
+                      <div class="hc-ai-brief-block hc-ai-brief-flags">
+                        <strong>{dt.aiBriefFlags}</strong>
+                        <ul>
+                          {selected.aiBrief.pointsToVerify.map((f) => (
+                            <li key={f}>{f}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <p class="hc-ai-disclaimer">{dt.aiBriefDisclaimer}</p>
+                  </>
+                ) : (
+                  <p class="hc-hint">{dt.aiBriefUnavailable}</p>
+                )}
               </div>
 
               <div class="hc-detail-section">

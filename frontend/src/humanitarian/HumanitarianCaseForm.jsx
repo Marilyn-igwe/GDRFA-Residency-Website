@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'preact/hooks'
-import { getCategories, checkReadiness, submitCase } from './api'
+import {
+  getCategories,
+  checkReadiness,
+  submitCase,
+  verifyHumanitarianDocuments,
+  checkStatementWithAI,
+  fileToBase64,
+} from './api'
 import { useLanguage } from '../language/LanguageContext'
+import { InfoTooltip } from '../components/InfoTooltip'
 import './humanitarian.css'
 
 export function HumanitarianCaseForm() {
@@ -19,11 +27,33 @@ export function HumanitarianCaseForm() {
   const [confirmation, setConfirmation] = useState(null)
   const [error, setError] = useState(null)
 
+  // AI document verification -- files: { [requirementLabel]: File }
+  const [documentFiles, setDocumentFiles] = useState({})
+  const [docAiResults, setDocAiResults] = useState(null)
+  const [docAiChecking, setDocAiChecking] = useState(false)
+  const [docAiError, setDocAiError] = useState(null)
+
+  // AI statement writing feedback
+  const [statementAi, setStatementAi] = useState(null)
+  const [statementAiChecking, setStatementAiChecking] = useState(false)
+  const [statementAiError, setStatementAiError] = useState(null)
+
   useEffect(() => {
     getCategories().then(setCategories).catch((e) => setError(e.message))
   }, [])
 
   const category = categories.find((c) => c.id === categoryId)
+
+  function selectCategory(id) {
+    setCategoryId(id)
+    setDocumentsChecked({})
+    setReadiness(null)
+    setDocumentFiles({})
+    setDocAiResults(null)
+    setDocAiError(null)
+    setStatementAi(null)
+    setStatementAiError(null)
+  }
 
   function toggleDocument(doc) {
     setDocumentsChecked((prev) => ({ ...prev, [doc]: !prev[doc] }))
@@ -32,6 +62,68 @@ export function HumanitarianCaseForm() {
 
   function documentsProvided() {
     return Object.keys(documentsChecked).filter((doc) => documentsChecked[doc])
+  }
+
+  function attachDocumentFile(label, file) {
+    setDocumentFiles((prev) => ({ ...prev, [label]: file }))
+    setDocAiResults(null)
+  }
+
+  function removeDocumentFile(label) {
+    setDocumentFiles((prev) => {
+      const next = { ...prev }
+      delete next[label]
+      return next
+    })
+    setDocAiResults(null)
+  }
+
+  async function runDocAiCheck() {
+    setDocAiChecking(true)
+    setDocAiError(null)
+    try {
+      const files = await Promise.all(
+        Object.entries(documentFiles).map(async ([label, file]) => ({
+          name: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          dataBase64: await fileToBase64(file),
+          requirementLabel: label,
+        }))
+      )
+      const result = await verifyHumanitarianDocuments(categoryId, files)
+      setDocAiResults(result)
+      // Matched documents feed straight into the same completeness check
+      // used everywhere else in the form -- the AI check is a faster way
+      // to satisfy a requirement, not a separate system.
+      const okLabels = (result.requirements || []).filter((r) => r.status === 'ok').map((r) => r.label)
+      if (okLabels.length) {
+        setDocumentsChecked((prev) => {
+          const next = { ...prev }
+          okLabels.forEach((label) => {
+            next[label] = true
+          })
+          return next
+        })
+        setReadiness(null)
+      }
+    } catch (e) {
+      setDocAiError(e.message)
+    } finally {
+      setDocAiChecking(false)
+    }
+  }
+
+  async function runStatementAiCheck() {
+    setStatementAiChecking(true)
+    setStatementAiError(null)
+    try {
+      const result = await checkStatementWithAI(categoryId, statement)
+      setStatementAi(result)
+    } catch (e) {
+      setStatementAiError(e.message)
+    } finally {
+      setStatementAiChecking(false)
+    }
   }
 
   async function handleCheckReadiness() {
@@ -90,7 +182,12 @@ export function HumanitarianCaseForm() {
 
   return (
     <div class="hc-form">
-      <h2>{ht.title}</h2>
+      <h2>
+        {ht.title}
+        <InfoTooltip label={ht.whatIsThisTitle} title={ht.whatIsThisTitle} align="left">
+          {ht.whatIsThisBody}
+        </InfoTooltip>
+      </h2>
       <p class="hc-intro">
         {ht.intro}
       </p>
@@ -112,13 +209,22 @@ export function HumanitarianCaseForm() {
               type="button"
               key={c.id}
               class={`hc-category-card ${categoryId === c.id ? 'selected' : ''}`}
-              onClick={() => {
-                setCategoryId(c.id)
-                setDocumentsChecked({})
-                setReadiness(null)
-              }}
+              onClick={() => selectCategory(c.id)}
             >
-              <strong>{c.name}</strong>
+              <span class="hc-category-card-heading">
+                <strong>{c.name}</strong>
+                {c.eligibility && (
+                  <InfoTooltip label={ht.eligibilityInfoLabel} title={ht.eligibilityTooltipTitle}>
+                    <span>{c.eligibility.whatItMeans}</span>
+                    <ul>
+                      {c.eligibility.whoItsFor.map((w) => (
+                        <li key={w}>{w}</li>
+                      ))}
+                    </ul>
+                    {c.eligibility.notFor && <span class="gd-tooltip-notfor">{c.eligibility.notFor}</span>}
+                  </InfoTooltip>
+                )}
+              </span>
               <span>{c.description}</span>
             </button>
           ))}
@@ -144,6 +250,68 @@ export function HumanitarianCaseForm() {
             </div>
           </div>
 
+          <div class="hc-field hc-ai-doc-section">
+            <label>
+              {ht.aiDocCheckTitle}
+              <InfoTooltip label={ht.aiInfoLabel} title={ht.aiDocCheckTitle} align="left">
+                {ht.aiDocCheckDisclaimer}
+              </InfoTooltip>
+            </label>
+            <p class="hc-hint">{ht.aiDocCheckHint}</p>
+            <div class="hc-doc-upload-list">
+              {category.requiredDocuments.map((doc) => {
+                const file = documentFiles[doc]
+                const result = docAiResults?.requirements?.find((r) => r.label === doc)
+                return (
+                  <div key={doc} class={`hc-doc-upload-row ${result ? `status-${result.status}` : ''}`}>
+                    <div class="hc-doc-upload-info">
+                      <span class="hc-doc-upload-label">{doc}</span>
+                      {file && <span class="hc-doc-upload-filename">{file.name}</span>}
+                      {result && (
+                        <span class={`hc-doc-status hc-doc-status-${result.status}`}>
+                          {result.status === 'ok' && `✓ ${ht.aiDocStatusOk}`}
+                          {result.status === 'missing' && `✗ ${ht.aiDocStatusMissing}`}
+                          {result.status === 'unclear' && `! ${ht.aiDocStatusUnclear}`}
+                          <span class="hc-doc-status-reason">{result.reason}</span>
+                        </span>
+                      )}
+                    </div>
+                    <div class="hc-doc-upload-actions">
+                      <label class="hc-doc-upload-btn">
+                        {file ? ht.replace : ht.upload}
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => e.target.files[0] && attachDocumentFile(doc, e.target.files[0])}
+                        />
+                      </label>
+                      {file && (
+                        <button type="button" class="hc-doc-remove-btn" onClick={() => removeDocumentFile(doc)}>
+                          {ht.remove}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {docAiError && <p class="hc-error">{docAiError}</p>}
+
+            {docAiResults && !docAiResults.aiEnabled && (
+              <p class="hc-hint hc-ai-note">{ht.aiUnavailableNote}</p>
+            )}
+
+            <button
+              type="button"
+              class="hc-check-button"
+              disabled={Object.keys(documentFiles).length === 0 || docAiChecking}
+              onClick={runDocAiCheck}
+            >
+              {docAiChecking ? ht.aiDocChecking : ht.aiDocCheckButton}
+            </button>
+          </div>
+
           <div class="hc-field">
             <label>
               {ht.statementLabel}
@@ -155,8 +323,57 @@ export function HumanitarianCaseForm() {
               rows={8}
               placeholder={ht.statementPlaceholder}
               value={statement}
-              onInput={(e) => setStatement(e.target.value)}
+              onInput={(e) => {
+                setStatement(e.target.value)
+                setStatementAi(null)
+              }}
             />
+
+            <div class="hc-ai-statement-panel">
+              <button
+                type="button"
+                class="hc-ai-statement-button"
+                disabled={!statement.trim() || statementAiChecking}
+                onClick={runStatementAiCheck}
+              >
+                {statementAiChecking ? ht.statementAiChecking : ht.statementAiButton}
+              </button>
+
+              {statementAiError && <p class="hc-error">{statementAiError}</p>}
+
+              {statementAi && (
+                <div class="hc-ai-statement-card">
+                  {statementAi.strengths.length > 0 && (
+                    <div class="hc-ai-statement-block">
+                      <strong>{ht.statementAiStrengths}</strong>
+                      <ul>
+                        {statementAi.strengths.map((s) => (
+                          <li key={s}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {statementAi.missingElements.length > 0 && (
+                    <div class="hc-ai-statement-block">
+                      <strong>{ht.statementAiMissing}</strong>
+                      <ul>
+                        {statementAi.missingElements.map((m) => (
+                          <li key={m}>{m}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {statementAi.clarityTip && (
+                    <p class="hc-ai-statement-tip">
+                      <strong>{ht.statementAiTip}:</strong> {statementAi.clarityTip}
+                    </p>
+                  )}
+                  <p class="hc-ai-disclaimer">
+                    {statementAi.aiEnabled ? ht.statementAiDisclaimer : ht.aiUnavailableNote}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           <button type="button" class="hc-check-button" onClick={handleCheckReadiness} disabled={checking}>

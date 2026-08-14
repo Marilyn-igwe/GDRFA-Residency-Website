@@ -1,0 +1,106 @@
+.gd-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.gd-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f0e2e4;
+  color: #8a1c2f;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: help;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.gd-tooltip-trigger:hover,
+.gd-tooltip-trigger:focus {
+  background: #8a1c2f;
+  color: #fff;
+  outline: none;
+}
+
+.gd-tooltip-bubble {
+  position: absolute;
+  z-index: 20;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  width: 280px;
+  max-width: 80vw;
+  background: #201417;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  padding: 14px 16px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.gd-tooltip-wrap.gd-tooltip-align-left .gd-tooltip-bubble {
+  left: 0;
+  transform: translateX(0) translateY(4px);
+}
+
+.gd-tooltip-wrap:hover .gd-tooltip-bubble,
+.gd-tooltip-trigger:focus + .gd-tooltip-bubble {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.gd-tooltip-wrap:not(.gd-tooltip-align-left):hover .gd-tooltip-bubble,
+.gd-tooltip-wrap:not(.gd-tooltip-align-left) .gd-tooltip-trigger:focus + .gd-tooltip-bubble {
+  transform: translateX(-50%) translateY(0);
+}
+
+.gd-tooltip-wrap.gd-tooltip-align-left:hover .gd-tooltip-bubble,
+.gd-tooltip-wrap.gd-tooltip-align-left .gd-tooltip-trigger:focus + .gd-tooltip-bubble {
+  transform: translateX(0) translateY(0);
+}
+
+.gd-tooltip-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e9d3a1;
+  margin-bottom: 6px;
+}
+
+.gd-tooltip-body {
+  display: block;
+}
+
+.gd-tooltip-body ul {
+  margin: 8px 0 0;
+  padding-left: 16px;
+}
+
+.gd-tooltip-body li {
+  margin-bottom: 4px;
+}
+
+.gd-tooltip-body .gd-tooltip-notfor {
+  display: block;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.65);
+  font-style: italic;
+}
+
+@media (max-width: 480px) {
+  .gd-tooltip-bubble {
+    width: 240px;
+  }
+}

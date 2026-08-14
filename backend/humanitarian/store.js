@@ -42,12 +42,13 @@ export function listCases() {
   return [...store.cases].sort((a, b) => a.readiness.readinessPercent - b.readiness.readinessPercent)
 }
 
-export function updateCase(reference, { status, committeeNotes }) {
+export function updateCase(reference, { status, committeeNotes, aiBrief }) {
   const store = load()
   const record = store.cases.find((c) => c.reference === reference)
   if (!record) return null
   if (status !== undefined) record.status = status
   if (committeeNotes !== undefined) record.committeeNotes = committeeNotes
+  if (aiBrief !== undefined) record.aiBrief = aiBrief
   save(store)
   return record
 }
