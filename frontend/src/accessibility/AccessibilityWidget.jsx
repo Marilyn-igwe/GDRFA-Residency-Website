@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'preact/hooks'
 import { useAccessibility, SCALE_LEVELS } from './AccessibilityContext'
-import { usePageReader } from './usePageReader'
+import { useHoverReader } from './useHoverReader'
 import { useLanguage } from '../language/LanguageContext'
 import './accessibility.css'
 
@@ -24,10 +24,9 @@ export function AccessibilityWidget() {
   const at = accessibility || {}
   const [open, setOpen] = useState(false)
   const panelRef = useRef(null)
-  const transcriptRef = useRef(null)
 
   const { scale, setScale, highContrast, toggleHighContrast } = useAccessibility()
-  const reader = usePageReader()
+  const reader = useHoverReader()
 
   useEffect(() => {
     if (!open) return
@@ -38,18 +37,10 @@ export function AccessibilityWidget() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
 
-  // Keep the highlighted sentence scrolled into view as reading progresses.
-  useEffect(() => {
-    if (!reader.highlightEnabled || reader.chunkIndex < 0 || !transcriptRef.current) return
-    const activeEl = transcriptRef.current.querySelector('.gd-a11y-transcript-active')
-    activeEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [reader.chunkIndex, reader.highlightEnabled])
-
   const lang = SPEECH_LANG[code] || 'en-US'
-  const showTranscript = reader.highlightEnabled && reader.status !== 'idle' && reader.chunks.length > 0
 
   return (
-    <div id="gd-a11y-widget-root" class={`gd-a11y-root ${open ? 'open' : ''}`} ref={panelRef}>
+    <div id="gd-a11y-widget-root" class={`gd-a11y-widget-root gd-a11y-root ${open ? 'open' : ''}`} ref={panelRef}>
       {open && (
         <div class="gd-a11y-panel" role="dialog" aria-label={at.panelTitle || 'Accessibility'}>
           <strong class="gd-a11y-panel-title">{at.panelTitle || 'Accessibility'}</strong>
@@ -99,9 +90,9 @@ export function AccessibilityWidget() {
               <div class="gd-a11y-playback-row">
                 <button
                   type="button"
-                  class={`gd-a11y-play-btn ${reader.status === 'playing' ? 'active' : ''}`}
+                  class={`gd-a11y-play-btn ${reader.status === 'active' ? 'active' : ''}`}
                   onClick={() => reader.play(lang)}
-                  disabled={reader.status === 'playing'}
+                  disabled={reader.status === 'active'}
                 >
                   <span aria-hidden="true">▶</span> {at.play || 'Play'}
                 </button>
@@ -109,7 +100,7 @@ export function AccessibilityWidget() {
                   type="button"
                   class="gd-a11y-play-btn"
                   onClick={reader.pause}
-                  disabled={reader.status !== 'playing'}
+                  disabled={reader.status !== 'active'}
                 >
                   <span aria-hidden="true">⏸</span> {at.pause || 'Pause'}
                 </button>
@@ -157,17 +148,10 @@ export function AccessibilityWidget() {
                 {at.importantOnly || 'Read only important information'}
               </label>
 
-              {showTranscript && (
-                <div class="gd-a11y-transcript" ref={transcriptRef}>
-                  {reader.chunks.map((sentence, i) => (
-                    <span
-                      key={i}
-                      class={i === reader.chunkIndex ? 'gd-a11y-transcript-active' : ''}
-                    >
-                      {sentence}{' '}
-                    </span>
-                  ))}
-                </div>
+              {reader.status === 'active' && (
+                <p class="gd-a11y-hover-hint">
+                  {at.hoverHint || 'Move your mouse over any text on the page to hear it read aloud.'}
+                </p>
               )}
             </div>
           )}

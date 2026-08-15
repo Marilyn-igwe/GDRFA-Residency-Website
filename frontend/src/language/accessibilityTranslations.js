@@ -21,6 +21,7 @@ export const accessibilityText = {
     speed: 'Speed',
     highlightWhileReading: 'Highlight text while reading',
     importantOnly: 'Read only important information',
+    hoverHint: 'Move your mouse over any text on the page to hear it read aloud.',
   },
   ar: {
     openLabel: 'خيارات إمكانية الوصول',
@@ -41,6 +42,7 @@ export const accessibilityText = {
     speed: 'السرعة',
     highlightWhileReading: 'تمييز النص أثناء القراءة',
     importantOnly: 'قراءة المعلومات المهمة فقط',
+    hoverHint: 'حرّك الماوس فوق أي نص في الصفحة لسماعه بصوت عالٍ.',
   },
   hi: {
     openLabel: 'सुलभता विकल्प',
@@ -61,6 +63,7 @@ export const accessibilityText = {
     speed: 'गति',
     highlightWhileReading: 'पढ़ते समय टेक्स्ट हाइलाइट करें',
     importantOnly: 'केवल महत्वपूर्ण जानकारी पढ़ें',
+    hoverHint: 'इसे ज़ोर से सुनने के लिए अपने माउस को पेज पर किसी भी टेक्स्ट पर ले जाएं।',
   },
   tl: {
     openLabel: 'Mga opsyon sa accessibility',
@@ -81,6 +84,7 @@ export const accessibilityText = {
     speed: 'Bilis',
     highlightWhileReading: 'I-highlight ang teksto habang binabasa',
     importantOnly: 'Basahin lang ang mahalagang impormasyon',
+    hoverHint: 'Ilipat ang mouse sa kahit anong teksto sa pahina para marinig ito nang malakas.',
   },
   ur: {
     openLabel: 'رسائی کے اختیارات',
@@ -101,6 +105,7 @@ export const accessibilityText = {
     speed: 'رفتار',
     highlightWhileReading: 'پڑھتے وقت متن نمایاں کریں',
     importantOnly: 'صرف اہم معلومات پڑھیں',
+    hoverHint: 'اسے بلند آواز سے سننے کے لیے اپنے ماؤس کو صفحے پر کسی بھی متن پر لے جائیں۔',
   },
   bn: {
     openLabel: 'অ্যাক্সেসিবিলিটি অপশন',
@@ -121,5 +126,6 @@ export const accessibilityText = {
     speed: 'গতি',
     highlightWhileReading: 'পড়ার সময় টেক্সট হাইলাইট করুন',
     importantOnly: 'শুধু গুরুত্বপূর্ণ তথ্য পড়ুন',
+    hoverHint: 'জোরে শুনতে পৃষ্ঠার যেকোনো টেক্সটের উপর আপনার মাউস নিয়ে যান।',
   },
 }
