@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'preact/hooks'
 import { useAccessibility, SCALE_LEVELS } from './AccessibilityContext'
-import { useSpeechSynthesis } from '../assistant/useSpeech'
+import { usePageReader } from './usePageReader'
 import { useLanguage } from '../language/LanguageContext'
 import './accessibility.css'
 
@@ -15,28 +15,19 @@ const SPEECH_LANG = {
   bn: 'bn-BD',
 }
 
-// Pulls the visible page text, minus this widget and the chat popup (its
-// own content only matters once opened, and doubling it into the read-
-// aloud pass would just be noise), collapses whitespace, and hands back
-// something SpeechSynthesis can read as a reasonably natural page summary.
-function getReadablePageText() {
-  const appEl = document.querySelector('.app')
-  if (!appEl) return ''
-  const clone = appEl.cloneNode(true)
-  clone.querySelectorAll('#gd-a11y-widget-root, .chat-widget, script, style, input, textarea').forEach((el) => el.remove())
-  return (clone.textContent || '').replace(/\s+/g, ' ').trim()
-}
+const SPEEDS = [0.75, 1, 1.25, 1.5]
 
 export function AccessibilityWidget() {
   const { code, accessibility } = useLanguage()
   // Falls back to English if a translation hasn't been added for this
-  // language yet — same convention as every other translated surface.
+  // language yet -- same convention as every other translated surface.
   const at = accessibility || {}
   const [open, setOpen] = useState(false)
   const panelRef = useRef(null)
+  const transcriptRef = useRef(null)
 
   const { scale, setScale, highContrast, toggleHighContrast } = useAccessibility()
-  const { supported: speechSupported, speaking, speak, cancel } = useSpeechSynthesis()
+  const reader = usePageReader()
 
   useEffect(() => {
     if (!open) return
@@ -47,14 +38,15 @@ export function AccessibilityWidget() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
 
-  function handleReadAloud() {
-    if (speaking) {
-      cancel()
-      return
-    }
-    const text = getReadablePageText()
-    if (text) speak(text, { lang: SPEECH_LANG[code] || 'en-US' })
-  }
+  // Keep the highlighted sentence scrolled into view as reading progresses.
+  useEffect(() => {
+    if (!reader.highlightEnabled || reader.chunkIndex < 0 || !transcriptRef.current) return
+    const activeEl = transcriptRef.current.querySelector('.gd-a11y-transcript-active')
+    activeEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [reader.chunkIndex, reader.highlightEnabled])
+
+  const lang = SPEECH_LANG[code] || 'en-US'
+  const showTranscript = reader.highlightEnabled && reader.status !== 'idle' && reader.chunks.length > 0
 
   return (
     <div id="gd-a11y-widget-root" class={`gd-a11y-root ${open ? 'open' : ''}`} ref={panelRef}>
@@ -98,11 +90,86 @@ export function AccessibilityWidget() {
             <span class="gd-a11y-switch">{highContrast ? (at.on || 'On') : (at.off || 'Off')}</span>
           </button>
 
-          {speechSupported && (
-            <button type="button" class={`gd-a11y-toggle-row ${speaking ? 'active' : ''}`} onClick={handleReadAloud}>
-              <span class="gd-a11y-icon" aria-hidden="true">{speaking ? '⏹' : '🔊'}</span>
-              <span>{speaking ? (at.stopReading || 'Stop reading') : (at.readAloud || 'Read this page aloud')}</span>
-            </button>
+          {reader.supported && (
+            <div class="gd-a11y-reading-section">
+              <strong class="gd-a11y-reading-title">
+                <span aria-hidden="true">🔊</span> {at.readingAssistance || 'Reading Assistance'}
+              </strong>
+
+              <div class="gd-a11y-playback-row">
+                <button
+                  type="button"
+                  class={`gd-a11y-play-btn ${reader.status === 'playing' ? 'active' : ''}`}
+                  onClick={() => reader.play(lang)}
+                  disabled={reader.status === 'playing'}
+                >
+                  <span aria-hidden="true">▶</span> {at.play || 'Play'}
+                </button>
+                <button
+                  type="button"
+                  class="gd-a11y-play-btn"
+                  onClick={reader.pause}
+                  disabled={reader.status !== 'playing'}
+                >
+                  <span aria-hidden="true">⏸</span> {at.pause || 'Pause'}
+                </button>
+                <button
+                  type="button"
+                  class="gd-a11y-play-btn"
+                  onClick={reader.stop}
+                  disabled={reader.status === 'idle'}
+                >
+                  <span aria-hidden="true">⏹</span> {at.stop || 'Stop'}
+                </button>
+              </div>
+
+              <div class="gd-a11y-row gd-a11y-speed-row">
+                <span class="gd-a11y-row-label">{at.speed || 'Speed'}</span>
+                <div class="gd-a11y-speed-controls">
+                  {SPEEDS.map((s) => (
+                    <button
+                      type="button"
+                      key={s}
+                      class={`gd-a11y-speed-btn ${reader.rate === s ? 'active' : ''}`}
+                      onClick={() => reader.setRate(s)}
+                    >
+                      {s}×
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label class="gd-a11y-checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={reader.highlightEnabled}
+                  onChange={(e) => reader.setHighlightEnabled(e.target.checked)}
+                />
+                {at.highlightWhileReading || 'Highlight text while reading'}
+              </label>
+
+              <label class="gd-a11y-checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={reader.importantOnly}
+                  onChange={(e) => reader.setImportantOnly(e.target.checked)}
+                />
+                {at.importantOnly || 'Read only important information'}
+              </label>
+
+              {showTranscript && (
+                <div class="gd-a11y-transcript" ref={transcriptRef}>
+                  {reader.chunks.map((sentence, i) => (
+                    <span
+                      key={i}
+                      class={i === reader.chunkIndex ? 'gd-a11y-transcript-active' : ''}
+                    >
+                      {sentence}{' '}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           <p class="gd-a11y-hint">
