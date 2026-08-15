@@ -1,44 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
 
-// "Reading Assistance", take two: reading the whole page start-to-finish
-// turned out to be confusing (no way to know what's coming, easy to lose
-// your place). This instead speaks whatever single element the mouse is
-// currently over — move over a heading, a card, a link, or a paragraph and
-// it reads just that piece, out loud, immediately.
-//
-// The visual highlight lives on the actual hovered element (via a CSS
-// class toggled imperatively, not through Preact state), which is safe
-// here in a way that highlighting arbitrary spoken TEXT wasn't: we're
-// never splitting or rewriting an element's children, just toggling one
-// class on an element that already exists in Preact's tree. Worst case on
-// a rare re-render is the outline flickers off, not a broken page.
+// Reading Assistance v2 -- one on/off toggle instead of Play/Pause/Stop,
+// highlighting always on (it's not really optional once hover-reading is
+// running), and a live caption of the current phrase so the panel feels
+// responsive rather than a silent black box while you explore the page.
 
 const FULL_SELECTOR = 'h1,h2,h3,h4,h5,h6,p,button,a,label,li,td,th,summary,legend'
-const IMPORTANT_SELECTOR = 'h1,h2,h3,h4,h5,h6,p'
+const MAIN_CONTENT_SELECTOR = 'h1,h2,h3,h4,h5,h6,p'
 const HIGHLIGHT_CLASS = 'gd-a11y-hover-highlight'
 
 export function useHoverReader() {
   const supported =
     typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
 
-  // 'idle' | 'active' | 'paused'
-  const [status, setStatus] = useState('idle')
+  const [active, setActive] = useState(false)
   const [rate, setRate] = useState(1)
-  const [importantOnly, setImportantOnly] = useState(false)
-  const [highlightEnabled, setHighlightEnabled] = useState(true)
+  const [mainContentOnly, setMainContentOnly] = useState(false)
+  const [currentText, setCurrentText] = useState('')
 
-  const statusRef = useRef('idle')
+  const activeRef = useRef(false)
   const rateRef = useRef(1)
-  const importantOnlyRef = useRef(false)
-  const highlightEnabledRef = useRef(true)
+  const mainContentOnlyRef = useRef(false)
   const langRef = useRef('en-US')
   const lastTargetRef = useRef(null)
   const highlightedElRef = useRef(null)
 
-  statusRef.current = status
+  activeRef.current = active
   rateRef.current = rate
-  importantOnlyRef.current = importantOnly
-  highlightEnabledRef.current = highlightEnabled
+  mainContentOnlyRef.current = mainContentOnly
 
   const clearHighlight = useCallback(() => {
     highlightedElRef.current?.classList.remove(HIGHLIGHT_CLASS)
@@ -46,27 +35,33 @@ export function useHoverReader() {
   }, [])
 
   const handleMouseOver = useCallback((e) => {
-    if (statusRef.current !== 'active') return
+    if (!activeRef.current) return
     const appEl = document.querySelector('.app')
     if (!appEl) return
 
-    const selector = importantOnlyRef.current ? IMPORTANT_SELECTOR : FULL_SELECTOR
+    const selector = mainContentOnlyRef.current ? MAIN_CONTENT_SELECTOR : FULL_SELECTOR
     const target = e.target.closest(selector)
     if (!target || !appEl.contains(target)) return
     if (target === lastTargetRef.current) return
     lastTargetRef.current = target
 
     clearHighlight()
-    if (highlightEnabledRef.current) {
-      target.classList.add(HIGHLIGHT_CLASS)
-      highlightedElRef.current = target
-    }
+    target.classList.add(HIGHLIGHT_CLASS)
+    highlightedElRef.current = target
 
     // aria-label covers icon-only buttons (like this widget's own FAB)
     // that have little or no visible text of their own.
-    const text = (target.getAttribute('aria-label') || target.innerText || target.textContent || '').trim()
-    if (!text) return
+    const rawText = (target.getAttribute('aria-label') || target.innerText || target.textContent || '').trim()
+    // Strip emoji/pictographic characters -- most speech engines either
+    // garble them or announce their literal Unicode name ("person
+    // raising hand"), which is confusing noise, not content.
+    const text = rawText.replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ').trim()
+    if (!text) {
+      setCurrentText('')
+      return
+    }
 
+    setCurrentText(text)
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = langRef.current
@@ -75,71 +70,58 @@ export function useHoverReader() {
   }, [clearHighlight])
 
   useEffect(() => {
-    if (status !== 'active') return
+    if (!active) return
     document.addEventListener('mouseover', handleMouseOver)
     return () => document.removeEventListener('mouseover', handleMouseOver)
-  }, [status, handleMouseOver])
+  }, [active, handleMouseOver])
 
   const start = useCallback(
     (lang) => {
       if (!supported) return
       langRef.current = lang
-      setStatus('active')
+      setActive(true)
     },
     [supported]
   )
-
-  const resume = useCallback(() => {
-    if (!supported) return
-    window.speechSynthesis.resume()
-    setStatus('active')
-  }, [supported])
-
-  const play = useCallback(
-    (lang) => {
-      if (status === 'paused') resume()
-      else start(lang)
-    },
-    [status, start, resume]
-  )
-
-  const pause = useCallback(() => {
-    if (!supported || status !== 'active') return
-    window.speechSynthesis.pause()
-    setStatus('paused')
-  }, [supported, status])
 
   const stop = useCallback(() => {
     if (!supported) return
     window.speechSynthesis.cancel()
     lastTargetRef.current = null
     clearHighlight()
-    setStatus('idle')
+    setActive(false)
+    setCurrentText('')
   }, [supported, clearHighlight])
 
-  // Changing "important only" mid-session would leave the highlight on an
-  // element that no longer matches the active selector — clearest to just
-  // drop the current target so the next hover picks fresh.
-  const changeImportantOnly = useCallback(
+  const toggle = useCallback(
+    (lang) => {
+      if (active) stop()
+      else start(lang)
+    },
+    [active, start, stop]
+  )
+
+  // Changing this mid-session would leave a stale highlight/caption from
+  // an element that no longer matches -- clearest to just drop it and let
+  // the next hover pick fresh.
+  const changeMainContentOnly = useCallback(
     (value) => {
-      setImportantOnly(value)
+      setMainContentOnly(value)
       lastTargetRef.current = null
       clearHighlight()
+      setCurrentText('')
     },
     [clearHighlight]
   )
 
   return {
     supported,
-    status,
+    active,
     rate,
     setRate,
-    importantOnly,
-    setImportantOnly: changeImportantOnly,
-    highlightEnabled,
-    setHighlightEnabled,
-    play,
-    pause,
-    stop,
+    mainContentOnly,
+    setMainContentOnly: changeMainContentOnly,
+    currentText,
+    toggle,
   }
 }

@@ -15,7 +15,26 @@ const SPEECH_LANG = {
   bn: 'bn-BD',
 }
 
-const SPEEDS = [0.75, 1, 1.25, 1.5]
+const SPEEDS = [
+  { value: 0.75, icon: '🐢' },
+  { value: 1, icon: '🚶' },
+  { value: 1.5, icon: '🐇' },
+]
+
+function Switch({ checked, onChange, label }) {
+  return (
+    <button
+      type="button"
+      class={`gd-a11y-switch-track ${checked ? 'on' : ''}`}
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+    >
+      <span class="gd-a11y-switch-thumb" />
+    </button>
+  )
+}
 
 export function AccessibilityWidget() {
   const { code, accessibility } = useLanguage()
@@ -38,12 +57,18 @@ export function AccessibilityWidget() {
   }, [open])
 
   const lang = SPEECH_LANG[code] || 'en-US'
+  const previewScaleClass = scale !== 'normal' ? `gd-a11y-preview-${scale}` : ''
 
   return (
     <div id="gd-a11y-widget-root" class={`gd-a11y-widget-root gd-a11y-root ${open ? 'open' : ''}`} ref={panelRef}>
       {open && (
         <div class="gd-a11y-panel" role="dialog" aria-label={at.panelTitle || 'Accessibility'}>
-          <strong class="gd-a11y-panel-title">{at.panelTitle || 'Accessibility'}</strong>
+          <div class="gd-a11y-panel-header">
+            <strong class="gd-a11y-panel-title">{at.panelTitle || 'Accessibility'}</strong>
+            <button type="button" class="gd-a11y-close-btn" aria-label={at.closeLabel || 'Close'} onClick={() => setOpen(false)}>
+              ×
+            </button>
+          </div>
 
           <div class="gd-a11y-row">
             <span class="gd-a11y-row-label">{at.textSize || 'Text size'}</span>
@@ -60,6 +85,7 @@ export function AccessibilityWidget() {
               >
                 A<span class="gd-a11y-minus">−</span>
               </button>
+              <span class={`gd-a11y-size-preview ${previewScaleClass}`} aria-hidden="true">Aa</span>
               <button
                 type="button"
                 class="gd-a11y-btn-small"
@@ -75,56 +101,49 @@ export function AccessibilityWidget() {
             </div>
           </div>
 
-          <button type="button" class={`gd-a11y-toggle-row ${highContrast ? 'active' : ''}`} onClick={toggleHighContrast}>
-            <span class="gd-a11y-icon" aria-hidden="true">◐</span>
-            <span>{at.highContrast || 'High contrast'}</span>
-            <span class="gd-a11y-switch">{highContrast ? (at.on || 'On') : (at.off || 'Off')}</span>
-          </button>
+          <div class="gd-a11y-row">
+            <span class="gd-a11y-row-label">
+              <span class="gd-a11y-icon" aria-hidden="true">◐</span> {at.highContrast || 'High contrast'}
+            </span>
+            <Switch checked={highContrast} onChange={toggleHighContrast} label={at.highContrast || 'High contrast'} />
+          </div>
 
           {reader.supported && (
             <div class="gd-a11y-reading-section">
-              <strong class="gd-a11y-reading-title">
-                <span aria-hidden="true">🔊</span> {at.readingAssistance || 'Reading Assistance'}
-              </strong>
-
-              <div class="gd-a11y-playback-row">
-                <button
-                  type="button"
-                  class={`gd-a11y-play-btn ${reader.status === 'active' ? 'active' : ''}`}
-                  onClick={() => reader.play(lang)}
-                  disabled={reader.status === 'active'}
-                >
-                  <span aria-hidden="true">▶</span> {at.play || 'Play'}
-                </button>
-                <button
-                  type="button"
-                  class="gd-a11y-play-btn"
-                  onClick={reader.pause}
-                  disabled={reader.status !== 'active'}
-                >
-                  <span aria-hidden="true">⏸</span> {at.pause || 'Pause'}
-                </button>
-                <button
-                  type="button"
-                  class="gd-a11y-play-btn"
-                  onClick={reader.stop}
-                  disabled={reader.status === 'idle'}
-                >
-                  <span aria-hidden="true">⏹</span> {at.stop || 'Stop'}
-                </button>
+              <div class="gd-a11y-row">
+                <span class="gd-a11y-row-label">
+                  <span class="gd-a11y-icon" aria-hidden="true">🔊</span> {at.hoverToRead || 'Hover to read'}
+                </span>
+                <Switch checked={reader.active} onChange={() => reader.toggle(lang)} label={at.hoverToRead || 'Hover to read'} />
               </div>
+
+              {reader.active ? (
+                <div class="gd-a11y-caption">
+                  <span class="gd-a11y-caption-dot" aria-hidden="true" />
+                  {reader.currentText ? (
+                    <span>{reader.currentText}</span>
+                  ) : (
+                    <span class="gd-a11y-caption-placeholder">
+                      {at.hoverHint || 'Move your mouse over any text to hear it.'}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p class="gd-a11y-reading-subtext">{at.hoverToReadHelp || 'Turn this on, then move your mouse over anything to hear it read aloud.'}</p>
+              )}
 
               <div class="gd-a11y-row gd-a11y-speed-row">
                 <span class="gd-a11y-row-label">{at.speed || 'Speed'}</span>
                 <div class="gd-a11y-speed-controls">
-                  {SPEEDS.map((s) => (
+                  {SPEEDS.map(({ value, icon }) => (
                     <button
                       type="button"
-                      key={s}
-                      class={`gd-a11y-speed-btn ${reader.rate === s ? 'active' : ''}`}
-                      onClick={() => reader.setRate(s)}
+                      key={value}
+                      class={`gd-a11y-speed-btn ${reader.rate === value ? 'active' : ''}`}
+                      onClick={() => reader.setRate(value)}
+                      aria-label={value === 0.75 ? at.speedSlow || 'Slow' : value === 1 ? at.speedNormal || 'Normal' : at.speedFast || 'Fast'}
                     >
-                      {s}×
+                      <span aria-hidden="true">{icon}</span>
                     </button>
                   ))}
                 </div>
@@ -133,26 +152,11 @@ export function AccessibilityWidget() {
               <label class="gd-a11y-checkbox-row">
                 <input
                   type="checkbox"
-                  checked={reader.highlightEnabled}
-                  onChange={(e) => reader.setHighlightEnabled(e.target.checked)}
+                  checked={reader.mainContentOnly}
+                  onChange={(e) => reader.setMainContentOnly(e.target.checked)}
                 />
-                {at.highlightWhileReading || 'Highlight text while reading'}
+                {at.mainContentOnly || 'Skip buttons and links'}
               </label>
-
-              <label class="gd-a11y-checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={reader.importantOnly}
-                  onChange={(e) => reader.setImportantOnly(e.target.checked)}
-                />
-                {at.importantOnly || 'Read only important information'}
-              </label>
-
-              {reader.status === 'active' && (
-                <p class="gd-a11y-hover-hint">
-                  {at.hoverHint || 'Move your mouse over any text on the page to hear it read aloud.'}
-                </p>
-              )}
             </div>
           )}
 
