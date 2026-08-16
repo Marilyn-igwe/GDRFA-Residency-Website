@@ -51,6 +51,7 @@ export function GoalHub({ t, onNavigate }) {
   return (
     <section class="goal-hub">
       <div class="goal-hub-inner">
+        <p class="goal-hub-eyebrow">{gh.eyebrow}</p>
         <h1 class="goal-hub-title">{gh.title}</h1>
         <p class="goal-hub-subtitle">{gh.subtitle}</p>
 
@@ -63,7 +64,9 @@ export function GoalHub({ t, onNavigate }) {
               style={{ animationDelay: `${i * 60}ms` }}
               onClick={() => handleCardClick(card.action)}
             >
-              <span class="goal-card-icon" aria-hidden="true">{card.icon}</span>
+              <span class="goal-card-icon-badge">
+                <span class="goal-card-icon" aria-hidden="true">{card.icon}</span>
+              </span>
               <span class="goal-card-title">{card.title}</span>
               <span class="goal-card-arrow" aria-hidden="true">→</span>
             </button>

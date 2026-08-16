@@ -60,6 +60,7 @@ export const translations = {
     backToDashboard: '← Back to Dashboard',
     changeLanguage: 'Change language',
     goalHub: {
+      eyebrow: 'GDRFA DUBAI · RESIDENCY SERVICES',
       title: 'How can I help you today?',
       subtitle: "Choose what you need, and we'll take you straight there.",
       cards: [
@@ -140,6 +141,7 @@ export const translations = {
     backToDashboard: '→ العودة إلى لوحة التحكم',
     changeLanguage: 'تغيير اللغة',
     goalHub: {
+      eyebrow: 'جي دي آر إف إيه دبي · خدمات الإقامة',
       title: 'كيف يمكنني مساعدتك اليوم؟',
       subtitle: 'اختر ما تحتاجه، وسنأخذك مباشرة إلى هناك.',
       cards: [
@@ -220,6 +222,7 @@ export const translations = {
     backToDashboard: '← डैशबोर्ड पर वापस जाएं',
     changeLanguage: 'भाषा बदलें',
     goalHub: {
+      eyebrow: 'जीडीआरएफए दुबई · निवास सेवाएं',
       title: 'मैं आज आपकी कैसे मदद कर सकता हूं?',
       subtitle: 'आपको जो चाहिए उसे चुनें, हम आपको सीधे वहां ले जाएंगे।',
       cards: [
@@ -300,6 +303,7 @@ export const translations = {
     backToDashboard: '← Bumalik sa Dashboard',
     changeLanguage: 'Palitan ang wika',
     goalHub: {
+      eyebrow: 'GDRFA DUBAI · MGA SERBISYONG PANIRAHAN',
       title: 'Paano kita matutulungan ngayon?',
       subtitle: 'Piliin ang kailangan mo, at dadalhin ka namin diretso doon.',
       cards: [
@@ -380,6 +384,7 @@ export const translations = {
     backToDashboard: '→ ڈیش بورڈ پر واپس جائیں',
     changeLanguage: 'زبان تبدیل کریں',
     goalHub: {
+      eyebrow: 'جی ڈی آر ایف اے دبئی · رہائشی خدمات',
       title: 'میں آج آپ کی کیسے مدد کر سکتا ہوں؟',
       subtitle: 'آپ کو جو چاہیے وہ منتخب کریں، ہم آپ کو براہ راست وہاں لے جائیں گے۔',
       cards: [
@@ -460,6 +465,7 @@ export const translations = {
     backToDashboard: '← ড্যাশবোর্ডে ফিরে যান',
     changeLanguage: 'ভাষা পরিবর্তন করুন',
     goalHub: {
+      eyebrow: 'জিডিআরএফএ দুবাই · আবাসন সেবা',
       title: 'আমি আজ আপনাকে কীভাবে সাহায্য করতে পারি?',
       subtitle: 'আপনার যা প্রয়োজন তা বেছে নিন, আমরা সরাসরি সেখানে নিয়ে যাব।',
       cards: [
