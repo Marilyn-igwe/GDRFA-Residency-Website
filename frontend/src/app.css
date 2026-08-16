@@ -998,3 +998,28 @@ footer {
     flex-wrap: wrap;
   }
 }
+/* =========================================
+   STAFF PORTAL TAB BAR (committee view)
+========================================= */
+
+.staff-tab-bar {
+  display: flex;
+  gap: 8px;
+  padding: 14px 7vw 0;
+  border-bottom: 1px solid #eee;
+}
+
+.staff-tab-bar button {
+  padding: 10px 18px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #777;
+}
+
+.staff-tab-bar button.active {
+  color: #8a1c2f;
+  border-bottom-color: #8a1c2f;
+}

@@ -6,6 +6,8 @@ import { BookingFlow } from './booking/BookingFlow'
 import { ChatWidget } from './chatbot/ChatWidget'
 import { HumanitarianCaseForm } from './humanitarian/HumanitarianCaseForm'
 import { CommitteeDashboard } from './humanitarian/CommitteeDashboard'
+import { FamilyApplicationFlow } from './family/FamilyApplicationFlow'
+import { FamilyCommitteeDashboard } from './family/FamilyCommitteeDashboard'
 import { EmployeeAssistant } from './assistant/EmployeeAssistant'
 import { GoalHub } from './components/GoalHub'
 import { LanguageWelcomeScreen } from './language/LanguageWelcomeScreen'
@@ -28,7 +30,8 @@ export function App() {
     () => (typeof window !== 'undefined' && localStorage.getItem(LANG_CODE_KEY)) || 'en'
   )
   const [showBooking, setShowBooking] = useState(false)
-  const [view, setView] = useState('home') // 'home' | 'humanitarian' | 'committee'
+  const [view, setView] = useState('home') // 'home' | 'humanitarian' | 'committee' | 'family'
+  const [staffTab, setStaffTab] = useState('humanitarian') // 'humanitarian' | 'family' — which staff portal is showing
   const t = translations[langCode] || translations.en
 
   // Keep <html lang="..."> and dir="ltr"/"rtl" in sync with the selected
@@ -74,7 +77,8 @@ export function App() {
   // Single entry point for every "goal" the person can pick from the
   // Goal Hub (including the resolved outcome of the "I'm Not Sure" flow).
   function handleGoalNavigate(action) {
-    if (action === 'visa' || action === 'appointment' || action === 'family') return setShowBooking(true)
+    if (action === 'visa' || action === 'appointment') return setShowBooking(true)
+    if (action === 'family') return setView('family')
     if (action === 'humanitarian') return setView('humanitarian')
     if (action === 'chat') return openChat()
     if (action === 'status') {
@@ -96,7 +100,7 @@ export function App() {
     .filter(Boolean)
     .join(' ')
 
-  if (view === 'humanitarian' || view === 'committee') {
+  if (view === 'humanitarian' || view === 'committee' || view === 'family') {
     return (
       <LanguageContext.Provider value={langContextValue}>
       <div class={appClass}>
@@ -120,8 +124,26 @@ export function App() {
           </div>
         </header>
 
-        {view === 'humanitarian' ? <HumanitarianCaseForm /> : <CommitteeDashboard />}
-        {view === 'humanitarian' ? <ChatWidget /> : <EmployeeAssistant />}
+        {view === 'committee' && (
+          <div class="staff-tab-bar">
+            <button
+              type="button"
+              class={staffTab === 'humanitarian' ? 'active' : ''}
+              onClick={() => setStaffTab('humanitarian')}
+            >
+              {t.humanitarianTabLabel || 'Humanitarian Cases'}
+            </button>
+            <button type="button" class={staffTab === 'family' ? 'active' : ''} onClick={() => setStaffTab('family')}>
+              {t.familyTabLabel || 'Family Applications'}
+            </button>
+          </div>
+        )}
+
+        {view === 'humanitarian' && <HumanitarianCaseForm />}
+        {view === 'committee' && staffTab === 'humanitarian' && <CommitteeDashboard />}
+        {view === 'committee' && staffTab === 'family' && <FamilyCommitteeDashboard />}
+        {view === 'family' && <FamilyApplicationFlow />}
+        {view === 'humanitarian' ? <ChatWidget /> : view === 'committee' ? <EmployeeAssistant /> : <ChatWidget />}
         <AccessibilityWidget />
       </div>
       </LanguageContext.Provider>
@@ -152,7 +174,12 @@ export function App() {
           </div>
         </header>
 
-        <BookingFlow />
+        <BookingFlow
+          onSelectFamilyService={() => {
+            setShowBooking(false)
+            setView('family')
+          }}
+        />
         <ChatWidget />
         <AccessibilityWidget />
       </div>

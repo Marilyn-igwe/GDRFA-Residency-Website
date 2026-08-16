@@ -27,8 +27,12 @@ function centersForService(serviceId) {
  * availability, soonest time) comes first. This ranking is the load-
  * balancing piece: it actively steers demand away from centers that are
  * already busy, which is the core of "optimizing visitor flow".
+ *
+ * `partySize` filters out slots that can't fit the whole group in one
+ * go — used by the family application flow to book one shared slot for
+ * the sponsor + every dependent, instead of one slot per person.
  */
-export function getAvailability(serviceId, date) {
+export function getAvailability(serviceId, date, partySize = 1) {
   const eligibleCenters = centersForService(serviceId)
 
   const allSlots = []
@@ -37,7 +41,7 @@ export function getAvailability(serviceId, date) {
     for (const time of times) {
       const booked = getBookedCount(center.id, serviceId, date, time)
       const remaining = center.slotCapacity - booked
-      if (remaining <= 0) continue // fully booked, don't offer it
+      if (remaining < partySize) continue // wouldn't fit the whole party
 
       allSlots.push({
         centerId: center.id,
@@ -66,14 +70,16 @@ export function getAvailability(serviceId, date) {
   return allSlots
 }
 
-export function findSlot(serviceId, date, centerId, time) {
+export function findSlot(serviceId, date, centerId, time, partySize = 1) {
   const center = centers.find((c) => c.id === centerId)
   if (!center) return null
   const booked = getBookedCount(centerId, serviceId, date, time)
+  const remaining = center.slotCapacity - booked
   return {
     center,
     booked,
-    remaining: center.slotCapacity - booked
+    remaining,
+    fitsParty: remaining >= partySize
   }
 }
 

@@ -1,0 +1,777 @@
+.family-flow {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+.family-flow h2 {
+  margin: 0 0 6px;
+  color: #222;
+}
+
+.family-intro {
+  color: #666;
+  margin: 0 0 28px;
+}
+
+.family-error {
+  color: #c23b3b;
+  background: #fdf3f3;
+  border: 1px solid #f2caca;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.family-hint {
+  color: #777;
+  font-size: 13px;
+}
+
+.family-empty-hint {
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+  margin: -8px 0 24px;
+}
+
+/* =========================================
+   FAMILY TREE
+========================================= */
+
+.family-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 12px 8px;
+  margin-bottom: 24px;
+}
+
+.family-tree-sponsor-row {
+  display: flex;
+  justify-content: center;
+}
+
+.family-tree-trunk {
+  width: 2px;
+  height: 22px;
+  background: #ddd;
+}
+
+.family-tree-children-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  position: relative;
+  padding-top: 0;
+}
+
+.family-tree-children-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background: #ddd;
+}
+
+.family-tree-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.family-tree-branch-line {
+  width: 2px;
+  height: 20px;
+  background: #ddd;
+}
+
+.family-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: #fff;
+  border: 2px solid #eee;
+  min-width: 120px;
+  text-align: center;
+  font-family: inherit;
+}
+
+.family-node-sponsor {
+  border-color: #8a1c2f;
+  background: #fdf3f4;
+}
+
+.family-node-icon {
+  font-size: 22px;
+}
+
+.family-node-name {
+  font-size: 13px;
+  color: #222;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.family-node-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8a1c2f;
+}
+
+.family-node-member {
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.family-node-member:hover {
+  border-color: #c99a3f;
+  transform: translateY(-2px);
+}
+
+.family-node-member.selected {
+  border-color: #8a1c2f;
+  box-shadow: 0 4px 14px rgba(138, 28, 47, 0.18);
+}
+
+.family-node-member.incomplete-name .family-node-name {
+  color: #999;
+  font-style: italic;
+}
+
+.family-node-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #f1e2c9;
+  color: #8a6414;
+}
+
+.family-node-badge.complete {
+  background: #d9f0e1;
+  color: #1e7a44;
+}
+
+.family-node-add {
+  cursor: pointer;
+  border-style: dashed;
+  border-color: #c9a0a8;
+  color: #8a1c2f;
+  background: #fff;
+  min-width: 110px;
+}
+
+.family-node-add:hover {
+  background: #fdf3f4;
+}
+
+.family-node-add .family-node-icon {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* =========================================
+   SECTIONS / FIELDS
+========================================= */
+
+.family-section {
+  margin-bottom: 22px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: #fafafa;
+  border: 1px solid #eee;
+}
+
+.family-section h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  color: #222;
+}
+
+.family-member-editor {
+  border-color: #e2c9cb;
+  background: #fdf9f9;
+}
+
+.family-member-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.family-member-editor-header h3 {
+  margin: 0;
+}
+
+.family-remove-btn {
+  background: none;
+  border: none;
+  color: #c23b3b;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.family-field-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.family-field {
+  flex: 1;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.family-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+}
+
+.family-field input {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+}
+
+.family-doc-note {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 8px;
+}
+
+.family-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.family-doc-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #333;
+}
+
+.family-doc-checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: #8a1c2f;
+}
+
+/* =========================================
+   SUMMARY CARD
+========================================= */
+
+.family-summary-card {
+  margin-bottom: 22px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: #201417;
+  color: #fff;
+}
+
+.family-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 5px 0;
+}
+
+.family-summary-row span {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.family-summary-total {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin-top: 6px;
+  padding-top: 12px;
+  font-size: 14px;
+}
+
+.family-summary-total strong {
+  color: #e9d3a1;
+  font-size: 16px;
+}
+
+.family-readiness-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  margin: 4px 0 10px;
+}
+
+.family-readiness-bar-fill {
+  height: 100%;
+  background: #c99a3f;
+  transition: width 0.3s ease;
+}
+
+.family-visits-saved {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 12px;
+  color: #e9d3a1;
+}
+
+/* =========================================
+   SCHEDULING
+========================================= */
+
+.family-date-grid {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 14px;
+}
+
+.family-date-card {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.family-date-card.selected {
+  border-color: #8a1c2f;
+  background: #8a1c2f;
+  color: #fff;
+}
+
+.family-slot-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.family-slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  text-align: left;
+  font-size: 12px;
+}
+
+.family-slot-card.selected {
+  border-color: #8a1c2f;
+  box-shadow: 0 2px 10px rgba(138, 28, 47, 0.15);
+}
+
+.family-slot-card strong {
+  font-size: 13px;
+  color: #222;
+}
+
+.family-slot-remaining {
+  color: #888;
+  font-size: 11px;
+}
+
+/* =========================================
+   SUBMIT / CONFIRMATION
+========================================= */
+
+.family-submit-button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  background: #8a1c2f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.family-submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.family-confirmation {
+  text-align: center;
+}
+
+.family-confirmation-check {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #1e7a44;
+  color: #fff;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.family-confirmation-reference {
+  font-size: 20px;
+  font-weight: 700;
+  color: #8a1c2f;
+  letter-spacing: 0.5px;
+}
+
+.family-confirmation-note {
+  color: #666;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 640px) {
+  .family-field-row {
+    flex-direction: column;
+  }
+}
+
+/* =========================================
+   BACK / MODE-SWITCH LINK
+========================================= */
+
+.family-back-link {
+  display: inline-block;
+  margin-bottom: 18px;
+  background: none;
+  border: none;
+  color: #8a1c2f;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  padding: 0;
+}
+
+/* =========================================
+   DRAFT AUTO-SAVE BANNER
+========================================= */
+
+.family-draft-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fdf8ec;
+  border: 1px solid #f0deb0;
+  font-size: 13px;
+  color: #6b5116;
+  margin-bottom: 22px;
+}
+
+.family-draft-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.family-draft-resume-btn {
+  padding: 7px 14px;
+  border-radius: 16px;
+  border: none;
+  background: #8a1c2f;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.family-draft-discard-btn {
+  padding: 7px 14px;
+  border-radius: 16px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #666;
+  font-size: 12px;
+}
+
+/* =========================================
+   "WHAT'S LEFT" CHECKLIST
+========================================= */
+
+.family-whatsleft {
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #fdf3f3;
+  border: 1px solid #f2caca;
+  font-size: 12.5px;
+  color: #7a2020;
+  margin-bottom: 22px;
+}
+
+.family-whatsleft strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.family-whatsleft p {
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.family-whatsleft-inline {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 0;
+  margin-top: 4px;
+}
+
+.family-whatsleft-inline strong {
+  color: #f0c98a;
+}
+
+.family-whatsleft-done {
+  text-align: center;
+  color: #1e7a44;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 22px;
+}
+
+/* =========================================
+   STATUS LOOKUP
+========================================= */
+
+.family-lookup-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.family-lookup-form input {
+  flex: 1;
+  min-width: 220px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+}
+
+.family-lookup-button {
+  padding: 11px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #8a1c2f;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.family-lookup-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.family-status-pill {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 12px;
+  background: #c99a3f;
+  color: #201417;
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+/* =========================================
+   MEMBER STATUS LIST (applicant-facing lookup)
+========================================= */
+
+.family-member-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.family-member-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fafafa;
+  border: 1px solid #eee;
+  font-size: 13px;
+}
+
+.family-status-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: #eee;
+  color: #555;
+}
+
+.family-status-submitted {
+  background: #e2e8f5;
+  color: #2b4c8c;
+}
+
+.family-status-under_review {
+  background: #fdf1d8;
+  color: #8a6414;
+}
+
+.family-status-additional_info_requested {
+  background: #fbe3d0;
+  color: #a3541a;
+}
+
+.family-status-approved {
+  background: #d9f0e1;
+  color: #1e7a44;
+}
+
+.family-status-denied {
+  background: #fbdada;
+  color: #a32626;
+}
+
+/* =========================================
+   STAFF DASHBOARD (family applications)
+========================================= */
+
+.family-staff-dashboard {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 20px 80px;
+}
+
+.family-staff-header h2 {
+  margin: 0 0 6px;
+}
+
+.family-staff-body {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.family-staff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.family-staff-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  background: #fff;
+  text-align: left;
+}
+
+.family-staff-row:hover {
+  border-color: #ddb9be;
+}
+
+.family-staff-row.selected {
+  border-color: #8a1c2f;
+  box-shadow: 0 2px 10px rgba(138, 28, 47, 0.12);
+}
+
+.family-staff-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.family-staff-row-sub {
+  font-size: 11.5px;
+  color: #888;
+}
+
+.family-staff-detail {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  padding: 22px;
+}
+
+.family-staff-detail-header {
+  margin-bottom: 16px;
+}
+
+.family-staff-detail-header h3 {
+  margin: 0 0 4px;
+}
+
+.family-staff-member-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.family-staff-member-header select,
+.family-staff-detail select {
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 12.5px;
+}
+
+.family-doc-ok {
+  font-size: 12px;
+  color: #1e7a44;
+  margin: 2px 0;
+}
+
+.family-doc-missing {
+  font-size: 12px;
+  color: #a32626;
+  margin: 2px 0;
+}
+
+@media (max-width: 800px) {
+  .family-staff-body {
+    grid-template-columns: 1fr;
+  }
+}

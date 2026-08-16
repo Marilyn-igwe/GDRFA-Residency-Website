@@ -6,6 +6,7 @@ import { bookingText } from './bookingTranslations'
 import { humanitarianText } from './humanitarianTranslations'
 import { assistantText } from './assistantTranslations'
 import { accessibilityText } from './accessibilityTranslations'
+import { familyText } from './familyTranslations'
 import { getLanguage } from './languages'
 
 export const LanguageContext = createContext({
@@ -17,6 +18,7 @@ export const LanguageContext = createContext({
   humanitarian: humanitarianText.en,
   assistant: assistantText.en,
   accessibility: accessibilityText.en,
+  family: familyText.en,
 })
 
 export function useLanguage() {
@@ -37,5 +39,6 @@ export function buildLanguageContextValue(code) {
     humanitarian: { ...humanitarianText.en, ...humanitarianText[lang.code] },
     assistant: { ...assistantText.en, ...assistantText[lang.code] },
     accessibility: { ...accessibilityText.en, ...accessibilityText[lang.code] },
+    family: { ...familyText.en, ...familyText[lang.code] },
   }
 }

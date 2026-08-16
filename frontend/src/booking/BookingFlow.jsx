@@ -19,7 +19,7 @@ function nextNDates(n) {
   return dates
 }
 
-export function BookingFlow() {
+export function BookingFlow({ onSelectFamilyService }) {
   const [step, setStep] = useState('service')
 
   const [services, setServices] = useState([])
@@ -56,6 +56,14 @@ export function BookingFlow() {
   }, [])
 
   function chooseService(service) {
+    // Family Residence Permit gets the dedicated multi-member flow
+    // (tree builder, one shared appointment, per-member documents)
+    // instead of the generic single-applicant path — whichever way
+    // someone reaches it, "family" should mean the same thing.
+    if (service.id === 'family-residence' && onSelectFamilyService) {
+      onSelectFamilyService()
+      return
+    }
     setSelectedService(service)
     setStep('date')
   }
@@ -205,6 +213,9 @@ export function BookingFlow() {
                 <strong>{service.name}</strong>
                 <span class="booking-fee">{service.feeAed} AED</span>
                 <span class="booking-duration">~{service.avgDurationMinutes} min</span>
+                {service.id === 'family-residence' && (
+                  <span class="booking-family-hint">Includes spouse &amp; children — one shared visit →</span>
+                )}
               </button>
             ))}
           </div>

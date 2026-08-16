@@ -100,3 +100,35 @@ export const centerServiceMap = {
   GDRFA: ['residence-renewal', 'entry-permit', 'family-residence', 'golden-visa'],
   Amer: ['residence-renewal', 'entry-permit', 'family-residence']
 }
+
+// --- Family Group Application ------------------------------------------
+//
+// The sponsor's own paperwork (Emirates ID, salary proof) is provided
+// ONCE for the whole household — not re-collected per dependent — because
+// it proves the sponsor's eligibility to sponsor, not anything about the
+// individual dependent. Each dependent then only needs the documents that
+// are actually about THEM.
+export const familySponsorDocuments = [
+  'Sponsor Emirates ID and passport copy',
+  'Salary certificate or bank statement'
+]
+
+export const familyMemberDocuments = {
+  spouse: [
+    'Marriage certificate (attested)',
+    "Spouse's passport copy",
+    "Spouse's passport-size photo (white background)"
+  ],
+  child: [
+    'Birth certificate (attested)',
+    "Child's passport copy",
+    "Child's passport-size photo (white background)"
+  ]
+}
+
+// One government fee per dependent added to the sponsorship — this is
+// what actually changes as the household grows, unlike the old flat
+// per-booking fee. The sponsor themselves isn't charged again; they
+// already hold their own residency.
+export const familyFeePerDependentAed = 600
+
