@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'preact/hooks'
 import { getServices, getAvailability, createAppointment, verifyDocuments, fileToBase64 } from './api'
+import { useUaePass } from '../uaepass/UaePassContext'
+import { UaePassBadge, UaePassBanner } from '../uaepass/UaePassDocuments'
 import './booking.css'
-import {
-  usePublishApplicationContext
-} from '../support/applicationContext'
 
 const STEPS = ['service', 'date', 'slot', 'documents', 'details', 'confirmation']
 
@@ -23,6 +22,7 @@ function nextNDates(n) {
 }
 
 export function BookingFlow({ onSelectFamilyService }) {
+  const { profile, matchDocument } = useUaePass()
   const [step, setStep] = useState('service')
 
   const [services, setServices] = useState([])
@@ -45,7 +45,11 @@ export function BookingFlow({ onSelectFamilyService }) {
   const [aiError, setAiError] = useState(null)
   const [overrideAiCheck, setOverrideAiCheck] = useState(false)
 
-  const [form, setForm] = useState({ customerName: '', customerEmail: '', customerPhone: '' })
+  const [form, setForm] = useState({
+    customerName: profile?.fullNameEnglish || '',
+    customerEmail: profile?.email || '',
+    customerPhone: profile?.mobileNumber || ''
+  })
   const [submitError, setSubmitError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [confirmation, setConfirmation] = useState(null)
@@ -57,6 +61,15 @@ export function BookingFlow({ onSelectFamilyService }) {
       .catch((e) => setServicesError(e.message))
       .finally(() => setServicesLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!profile) return
+    setForm((current) => ({
+      customerName: current.customerName || profile.fullNameEnglish || '',
+      customerEmail: current.customerEmail || profile.email || '',
+      customerPhone: current.customerPhone || profile.mobileNumber || ''
+    }))
+  }, [profile])
 
   function chooseService(service) {
     // Family Residence Permit gets the dedicated multi-member flow
@@ -173,79 +186,23 @@ export function BookingFlow({ onSelectFamilyService }) {
     setAiResults(null)
     setAiError(null)
     setOverrideAiCheck(false)
-    setForm({ customerName: '', customerEmail: '', customerPhone: '' })
+    setForm({
+      customerName: profile?.fullNameEnglish || '',
+      customerEmail: profile?.email || '',
+      customerPhone: profile?.mobileNumber || ''
+    })
     setConfirmation(null)
     setSubmitError(null)
   }
 
   const stepIndex = STEPS.indexOf(step)
-    const bookingStepNames = {
-    service: 'Service selection',
-    date: 'Appointment date',
-    slot: 'Center and time',
-    documents: 'Required documents',
-    details: 'Applicant details',
-    confirmation: 'Confirmation'
-  }
-
-  const bookingRequiredDocuments =
-    selectedService?.documents || []
-
-  const bookingMissingDocuments =
-    bookingRequiredDocuments.filter(
-      (document) =>
-        !documentFiles[document]
-    )
-
-  usePublishApplicationContext({
-    contextId: 'booking-application',
-
-    applicationType:
-      'appointment-booking',
-
-    serviceId:
-      selectedService?.id || '',
-
-    serviceName:
-      selectedService?.name ||
-      'GDRFA service application',
-
-    stepId: step,
-
-    stepName:
-      bookingStepNames[step] ||
-      step,
-
-    selectedCategory: '',
-
-    selectedApplicant:
-      step === 'details'
-        ? 'Primary applicant'
-        : '',
-
-    requiredDocuments:
-      bookingRequiredDocuments,
-
-    missingDocuments:
-      bookingMissingDocuments,
-
-    visibleErrors: [
-      availabilityError,
-      aiError,
-      submitError
-    ].filter(Boolean),
-
-    acceptedFileTypes: [
-      'application/pdf',
-      'image/jpeg',
-      'image/png'
-    ],
-
-    maximumFileSize: ''
-  })
+  const allDocumentsProvided = selectedService?.documents?.every(
+    (label) => Boolean(matchDocument(label) || documentFiles[label])
+  ) || false
 
   return (
     <div class="booking-flow">
+      <UaePassBanner />
       <div class="booking-progress">
         {STEPS.slice(0, 5).map((s, i) => (
           <div key={s} class={`booking-progress-step ${i <= stepIndex ? 'done' : ''} ${i === stepIndex ? 'current' : ''}`}>
@@ -371,11 +328,18 @@ export function BookingFlow({ onSelectFamilyService }) {
           <div class="booking-doc-upload-list">
             {selectedService.documents.map((label) => {
               const file = documentFiles[label]
+              const uaeDocument = matchDocument(label)
               const result = aiResults?.requirements?.find((r) => r.label === label)
               return (
-                <div key={label} class={`booking-doc-upload-row ${result ? `status-${result.status}` : ''}`}>
+                <div key={label} class={`booking-doc-upload-row ${uaeDocument ? 'status-ok' : result ? `status-${result.status}` : ''}`}>
                   <div class="booking-doc-upload-info">
                     <span class="booking-doc-upload-label">{label}</span>
+                    {uaeDocument && (
+                      <>
+                        <UaePassBadge />
+                        <span class="booking-doc-upload-filename">{uaeDocument.fileName}</span>
+                      </>
+                    )}
                     {file && <span class="booking-doc-upload-filename">{file.name}</span>}
                     {result && (
                       <span class={`booking-doc-status booking-doc-status-${result.status}`}>
@@ -387,14 +351,14 @@ export function BookingFlow({ onSelectFamilyService }) {
                     )}
                   </div>
                   <div class="booking-doc-upload-actions">
-                    <label class="booking-doc-upload-btn">
+                    {!uaeDocument && <label class="booking-doc-upload-btn">
                       {file ? 'Replace' : 'Upload'}
                       <input
                         type="file"
                         accept="image/*,.pdf"
                         onChange={(e) => e.target.files[0] && attachDocument(label, e.target.files[0])}
                       />
-                    </label>
+                    </label>}
                     {file && (
                       <button type="button" class="booking-doc-remove-btn" onClick={() => removeDocument(label)}>
                         Remove
@@ -445,7 +409,7 @@ export function BookingFlow({ onSelectFamilyService }) {
             <button
               type="button"
               class="booking-continue-btn"
-              disabled={!aiResults || (!aiResults.allSatisfied && !overrideAiCheck)}
+              disabled={!allDocumentsProvided || (Object.keys(documentFiles).length > 0 && (!aiResults || (!aiResults.allSatisfied && !overrideAiCheck)))}
               onClick={continueFromDocuments}
             >
               Continue →
@@ -479,6 +443,7 @@ export function BookingFlow({ onSelectFamilyService }) {
           <form class="booking-form" onSubmit={submitBooking}>
             <label>
               Full name
+              <UaePassBadge />
               <input
                 type="text"
                 required
@@ -488,6 +453,7 @@ export function BookingFlow({ onSelectFamilyService }) {
             </label>
             <label>
               Email
+              <UaePassBadge />
               <input
                 type="email"
                 required
@@ -497,6 +463,7 @@ export function BookingFlow({ onSelectFamilyService }) {
             </label>
             <label>
               Phone (optional)
+              <UaePassBadge />
               <input
                 type="tel"
                 value={form.customerPhone}

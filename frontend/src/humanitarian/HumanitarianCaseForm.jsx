@@ -1,231 +1,51 @@
-import {
-  useState,
-  useEffect
-} from 'preact/hooks'
+import { useState, useEffect } from 'preact/hooks'
 import {
   getCategories,
   checkReadiness,
   submitCase,
   verifyHumanitarianDocuments,
   checkStatementWithAI,
-  fileToBase64
+  fileToBase64,
 } from './api'
-import {
-  useLanguage
-} from '../language/LanguageContext'
-import {
-  InfoTooltip
-} from '../components/InfoTooltip'
-import {
-  usePublishApplicationContext
-} from '../support/applicationContext'
+import { useLanguage } from '../language/LanguageContext'
+import { useUaePass } from '../uaepass/UaePassContext'
+import { UaePassBadge, UaePassBanner } from '../uaepass/UaePassDocuments'
+import { InfoTooltip } from '../components/InfoTooltip'
 import './humanitarian.css'
 
 export function HumanitarianCaseForm() {
-  const {
-    humanitarian
-  } = useLanguage()
+  const { profile, matchDocument } = useUaePass()
+  const { humanitarian } = useLanguage()
+  const ht = humanitarian.form
+  const [categories, setCategories] = useState([])
+  const [categoryId, setCategoryId] = useState(null)
+  const [documentsChecked, setDocumentsChecked] = useState({})
+  const [statement, setStatement] = useState('')
+  const [applicantName, setApplicantName] = useState(profile?.fullNameEnglish || '')
+  const [applicantEmail, setApplicantEmail] = useState(profile?.email || '')
 
-  const ht =
-    humanitarian.form
+  const [readiness, setReadiness] = useState(null)
+  const [checking, setChecking] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [confirmation, setConfirmation] = useState(null)
+  const [error, setError] = useState(null)
 
-  const [
-    categories,
-    setCategories
-  ] = useState([])
+  // AI document verification -- files: { [requirementLabel]: File }
+  const [documentFiles, setDocumentFiles] = useState({})
+  const [docAiResults, setDocAiResults] = useState(null)
+  const [docAiChecking, setDocAiChecking] = useState(false)
+  const [docAiError, setDocAiError] = useState(null)
 
-  const [
-    categoryId,
-    setCategoryId
-  ] = useState(null)
-
-  const [
-    documentsChecked,
-    setDocumentsChecked
-  ] = useState({})
-
-  const [
-    statement,
-    setStatement
-  ] = useState('')
-
-  const [
-    applicantName,
-    setApplicantName
-  ] = useState('')
-
-  const [
-    applicantEmail,
-    setApplicantEmail
-  ] = useState('')
-
-  const [
-    readiness,
-    setReadiness
-  ] = useState(null)
-
-  const [
-    checking,
-    setChecking
-  ] = useState(false)
-
-  const [
-    submitting,
-    setSubmitting
-  ] = useState(false)
-
-  const [
-    confirmation,
-    setConfirmation
-  ] = useState(null)
-
-  const [
-    error,
-    setError
-  ] = useState(null)
-
-  const [
-    documentFiles,
-    setDocumentFiles
-  ] = useState({})
-
-  const [
-    docAiResults,
-    setDocAiResults
-  ] = useState(null)
-
-  const [
-    docAiChecking,
-    setDocAiChecking
-  ] = useState(false)
-
-  const [
-    docAiError,
-    setDocAiError
-  ] = useState(null)
-
-  const [
-    statementAi,
-    setStatementAi
-  ] = useState(null)
-
-  const [
-    statementAiChecking,
-    setStatementAiChecking
-  ] = useState(false)
-
-  const [
-    statementAiError,
-    setStatementAiError
-  ] = useState(null)
+  // AI statement writing feedback
+  const [statementAi, setStatementAi] = useState(null)
+  const [statementAiChecking, setStatementAiChecking] = useState(false)
+  const [statementAiError, setStatementAiError] = useState(null)
 
   useEffect(() => {
-    getCategories()
-      .then(setCategories)
-      .catch((requestError) => {
-        setError(
-          requestError.message
-        )
-      })
+    getCategories().then(setCategories).catch((e) => setError(e.message))
   }, [])
 
-  const category =
-    categories.find(
-      (item) =>
-        item.id === categoryId
-    )
-
-  const humanitarianRequiredDocuments =
-    category?.requiredDocuments || []
-
-  const humanitarianMissingDocuments =
-    humanitarianRequiredDocuments.filter(
-      (document) =>
-        !documentsChecked[document] &&
-        !documentFiles[document]
-    )
-
-  let humanitarianStepId =
-    'category'
-
-  let humanitarianStepName =
-    'Request category'
-
-  if (category) {
-    humanitarianStepId =
-      'documents'
-
-    humanitarianStepName =
-      'Supporting documents'
-  }
-
-  if (
-    category &&
-    humanitarianMissingDocuments
-      .length === 0
-  ) {
-    humanitarianStepId =
-      'statement'
-
-    humanitarianStepName =
-      'Written statement'
-  }
-
-  if (confirmation) {
-    humanitarianStepId =
-      'confirmation'
-
-    humanitarianStepName =
-      'Request confirmation'
-  }
-
-  usePublishApplicationContext({
-    contextId:
-      'humanitarian-application',
-
-    applicationType:
-      'humanitarian-request',
-
-    serviceId:
-      category?.id || '',
-
-    serviceName:
-      category
-        ? `Humanitarian Request: ${category.name}`
-        : 'Humanitarian Request',
-
-    stepId:
-      humanitarianStepId,
-
-    stepName:
-      humanitarianStepName,
-
-    selectedCategory:
-      category?.name || '',
-
-    // Personal names are not published.
-    selectedApplicant: '',
-
-    requiredDocuments:
-      humanitarianRequiredDocuments,
-
-    missingDocuments:
-      humanitarianMissingDocuments,
-
-    visibleErrors: [
-      error,
-      docAiError,
-      statementAiError
-    ].filter(Boolean),
-
-    acceptedFileTypes: [
-      'application/pdf',
-      'image/jpeg',
-      'image/png'
-    ],
-
-    maximumFileSize: ''
-  })
+  const category = categories.find((c) => c.id === categoryId)
 
   function selectCategory(id) {
     setCategoryId(id)
@@ -238,139 +58,59 @@ export function HumanitarianCaseForm() {
     setStatementAiError(null)
   }
 
-  function toggleDocument(
-    document
-  ) {
-    setDocumentsChecked(
-      (current) => ({
-        ...current,
-
-        [document]:
-          !current[document]
-      })
-    )
-
+  function toggleDocument(doc) {
+    setDocumentsChecked((prev) => ({ ...prev, [doc]: !prev[doc] }))
     setReadiness(null)
   }
 
   function documentsProvided() {
-    return Object.keys(
-      documentsChecked
-    ).filter(
-      (document) =>
-        documentsChecked[
-          document
-        ]
-    )
+    return Object.keys(documentsChecked).filter((doc) => documentsChecked[doc])
   }
 
-  function attachDocumentFile(
-    label,
-    file
-  ) {
-    setDocumentFiles(
-      (current) => ({
-        ...current,
-        [label]: file
-      })
-    )
-
+  function attachDocumentFile(label, file) {
+    setDocumentFiles((prev) => ({ ...prev, [label]: file }))
     setDocAiResults(null)
   }
 
-  function removeDocumentFile(
-    label
-  ) {
-    setDocumentFiles(
-      (current) => {
-        const next = {
-          ...current
-        }
-
-        delete next[label]
-
-        return next
-      }
-    )
-
+  function removeDocumentFile(label) {
+    setDocumentFiles((prev) => {
+      const next = { ...prev }
+      delete next[label]
+      return next
+    })
     setDocAiResults(null)
   }
 
   async function runDocAiCheck() {
     setDocAiChecking(true)
     setDocAiError(null)
-
     try {
-      const files =
-        await Promise.all(
-          Object.entries(
-            documentFiles
-          ).map(
-            async (
-              [label, file]
-            ) => ({
-              name: file.name,
-
-              mimeType:
-                file.type ||
-                'application/octet-stream',
-
-              dataBase64:
-                await fileToBase64(
-                  file
-                ),
-
-              requirementLabel:
-                label
-            })
-          )
-        )
-
-      const result =
-        await verifyHumanitarianDocuments(
-          categoryId,
-          files
-        )
-
+      const files = await Promise.all(
+        Object.entries(documentFiles).map(async ([label, file]) => ({
+          name: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          dataBase64: await fileToBase64(file),
+          requirementLabel: label,
+        }))
+      )
+      const result = await verifyHumanitarianDocuments(categoryId, files)
       setDocAiResults(result)
-
-      const acceptedLabels =
-        (
-          result.requirements || []
-        )
-          .filter(
-            (requirement) =>
-              requirement.status ===
-              'ok'
-          )
-          .map(
-            (requirement) =>
-              requirement.label
-          )
-
-      if (acceptedLabels.length) {
-        setDocumentsChecked(
-          (current) => {
-            const next = {
-              ...current
-            }
-
-            acceptedLabels.forEach(
-              (label) => {
-                next[label] = true
-              }
-            )
-
-            return next
-          }
-        )
-
+      // Matched documents feed straight into the same completeness check
+      // used everywhere else in the form -- the AI check is a faster way
+      // to satisfy a requirement, not a separate system.
+      const okLabels = (result.requirements || []).filter((r) => r.status === 'ok').map((r) => r.label)
+      if (okLabels.length) {
+        setDocumentsChecked((prev) => {
+          const next = { ...prev }
+          okLabels.forEach((label) => {
+            next[label] = true
+          })
+          return next
+        })
         setReadiness(null)
       }
-    } catch (requestError) {
-      setDocAiError(
-        requestError.message
-      )
+    } catch (e) {
+      setDocAiError(e.message)
     } finally {
       setDocAiChecking(false)
     }
@@ -379,19 +119,11 @@ export function HumanitarianCaseForm() {
   async function runStatementAiCheck() {
     setStatementAiChecking(true)
     setStatementAiError(null)
-
     try {
-      const result =
-        await checkStatementWithAI(
-          categoryId,
-          statement
-        )
-
+      const result = await checkStatementWithAI(categoryId, statement)
       setStatementAi(result)
-    } catch (requestError) {
-      setStatementAiError(
-        requestError.message
-      )
+    } catch (e) {
+      setStatementAiError(e.message)
     } finally {
       setStatementAiChecking(false)
     }
@@ -400,52 +132,35 @@ export function HumanitarianCaseForm() {
   async function handleCheckReadiness() {
     setChecking(true)
     setError(null)
-
     try {
-      const result =
-        await checkReadiness({
-          categoryId,
-
-          documentsProvided:
-            documentsProvided(),
-
-          statement
-        })
-
+      const result = await checkReadiness({
+        categoryId,
+        documentsProvided: documentsProvided(),
+        statement,
+      })
       setReadiness(result)
-    } catch (requestError) {
-      setError(
-        requestError.message
-      )
+    } catch (e) {
+      setError(e.message)
     } finally {
       setChecking(false)
     }
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault()
-
+  async function handleSubmit(e) {
+    e.preventDefault()
     setSubmitting(true)
     setError(null)
-
     try {
-      const result =
-        await submitCase({
-          categoryId,
-
-          documentsProvided:
-            documentsProvided(),
-
-          statement,
-          applicantName,
-          applicantEmail
-        })
-
+      const result = await submitCase({
+        categoryId,
+        documentsProvided: documentsProvided(),
+        statement,
+        applicantName,
+        applicantEmail,
+      })
       setConfirmation(result)
-    } catch (requestError) {
-      setError(
-        requestError.message
-      )
+    } catch (e) {
+      setError(e.message)
     } finally {
       setSubmitting(false)
     }
@@ -454,36 +169,15 @@ export function HumanitarianCaseForm() {
   if (confirmation) {
     return (
       <div class="hc-form hc-confirmation">
-        <div class="hc-check">
-          ✓
-        </div>
-
-        <h2>
-          {ht.confirmedTitle}
-        </h2>
-
-        <p class="hc-reference">
-          {confirmation.reference}
-        </p>
-
+        <div class="hc-check">✓</div>
+        <h2>{ht.confirmedTitle}</h2>
+        <p class="hc-reference">{confirmation.reference}</p>
         <p class="hc-note">
           {ht.confirmedNote}
         </p>
-
         <div class="hc-readiness-summary">
-          <strong>
-            {ht.completenessLabel(
-              confirmation.readiness
-                .readinessPercent
-            )}
-          </strong>
-
-          <p>
-            {
-              confirmation
-                .readiness.note
-            }
-          </p>
+          <strong>{ht.completenessLabel(confirmation.readiness.readinessPercent)}</strong>
+          <p>{confirmation.readiness.note}</p>
         </div>
       </div>
     )
@@ -491,379 +185,152 @@ export function HumanitarianCaseForm() {
 
   return (
     <div class="hc-form">
+      <UaePassBanner />
       <h2>
         {ht.title}
-
-        <InfoTooltip
-          label={
-            ht.whatIsThisTitle
-          }
-          title={
-            ht.whatIsThisTitle
-          }
-          align="left"
-        >
+        <InfoTooltip label={ht.whatIsThisTitle} title={ht.whatIsThisTitle} align="left">
           {ht.whatIsThisBody}
         </InfoTooltip>
       </h2>
-
       <p class="hc-intro">
         {ht.intro}
       </p>
-
       <button
         type="button"
         class="hc-unsure-link"
-        onClick={() => {
-          window.dispatchEvent(
-            new CustomEvent(
-              'gdrfa:open-chat'
-            )
-          )
-        }}
+        onClick={() => window.dispatchEvent(new CustomEvent('gdrfa:open-chat'))}
       >
         {ht.unsureLink}
       </button>
 
-      {error && (
-        <p class="hc-error">
-          {error}
-        </p>
-      )}
+      {error && <p class="hc-error">{error}</p>}
 
       <div class="hc-field">
-        <label>
-          {ht.categoryLabel}
-        </label>
-
+        <label>{ht.categoryLabel}</label>
         <div class="hc-category-grid">
-          {categories.map(
-            (item) => (
-              <button
-                type="button"
-                key={item.id}
-                class={
-                  `hc-category-card ` +
-                  (
-                    categoryId ===
-                    item.id
-                      ? 'selected'
-                      : ''
-                  )
-                }
-                onClick={() =>
-                  selectCategory(
-                    item.id
-                  )
-                }
-              >
-                <span class="hc-category-card-heading">
-                  <strong>
-                    {item.name}
-                  </strong>
-
-                  {item.eligibility && (
-                    <InfoTooltip
-                      label={
-                        ht.eligibilityInfoLabel
-                      }
-                      title={
-                        ht.eligibilityTooltipTitle
-                      }
-                    >
-                      <span>
-                        {
-                          item
-                            .eligibility
-                            .whatItMeans
-                        }
-                      </span>
-
-                      <ul>
-                        {item.eligibility
-                          .whoItsFor
-                          .map(
-                            (entry) => (
-                              <li
-                                key={
-                                  entry
-                                }
-                              >
-                                {entry}
-                              </li>
-                            )
-                          )}
-                      </ul>
-
-                      {item.eligibility
-                        .notFor && (
-                        <span class="gd-tooltip-notfor">
-                          {
-                            item
-                              .eligibility
-                              .notFor
-                          }
-                        </span>
-                      )}
-                    </InfoTooltip>
-                  )}
-                </span>
-
-                <span>
-                  {item.description}
-                </span>
-              </button>
-            )
-          )}
+          {categories.map((c) => (
+            <button
+              type="button"
+              key={c.id}
+              class={`hc-category-card ${categoryId === c.id ? 'selected' : ''}`}
+              onClick={() => selectCategory(c.id)}
+            >
+              <span class="hc-category-card-heading">
+                <strong>{c.name}</strong>
+                {c.eligibility && (
+                  <InfoTooltip label={ht.eligibilityInfoLabel} title={ht.eligibilityTooltipTitle}>
+                    <span>{c.eligibility.whatItMeans}</span>
+                    <ul>
+                      {c.eligibility.whoItsFor.map((w) => (
+                        <li key={w}>{w}</li>
+                      ))}
+                    </ul>
+                    {c.eligibility.notFor && <span class="gd-tooltip-notfor">{c.eligibility.notFor}</span>}
+                  </InfoTooltip>
+                )}
+              </span>
+              <span>{c.description}</span>
+            </button>
+          ))}
         </div>
       </div>
 
       {category && (
         <>
           <div class="hc-field">
-            <label>
-              {
-                ht.requiredDocumentsLabel
-              }
-            </label>
-
-            <p class="hc-hint">
-              {ht.docsHint}
-            </p>
-
+            <label>{ht.requiredDocumentsLabel}</label>
+            <p class="hc-hint">{ht.docsHint}</p>
             <div class="hc-doc-list">
-              {humanitarianRequiredDocuments.map(
-                (document) => (
-                  <label
-                    key={document}
-                    class="hc-doc-checkbox"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={
-                        !!documentsChecked[
-                          document
-                        ]
-                      }
-                      onChange={() =>
-                        toggleDocument(
-                          document
-                        )
-                      }
-                    />
-
-                    {document}
-                  </label>
-                )
-              )}
+              {category.requiredDocuments.map((doc) => (
+                <label key={doc} class="hc-doc-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={!!documentsChecked[doc]}
+                    onChange={() => toggleDocument(doc)}
+                  />
+                  {doc}
+                </label>
+              ))}
             </div>
           </div>
 
           <div class="hc-field hc-ai-doc-section">
             <label>
               {ht.aiDocCheckTitle}
-
-              <InfoTooltip
-                label={
-                  ht.aiInfoLabel
-                }
-                title={
-                  ht.aiDocCheckTitle
-                }
-                align="left"
-              >
-                {
-                  ht.aiDocCheckDisclaimer
-                }
+              <InfoTooltip label={ht.aiInfoLabel} title={ht.aiDocCheckTitle} align="left">
+                {ht.aiDocCheckDisclaimer}
               </InfoTooltip>
             </label>
-
-            <p class="hc-hint">
-              {ht.aiDocCheckHint}
-            </p>
-
+            <p class="hc-hint">{ht.aiDocCheckHint}</p>
             <div class="hc-doc-upload-list">
-              {humanitarianRequiredDocuments.map(
-                (document) => {
-                  const file =
-                    documentFiles[
-                      document
-                    ]
-
-                  const result =
-                    docAiResults
-                      ?.requirements
-                      ?.find(
-                        (requirement) =>
-                          requirement.label ===
-                          document
-                      )
-
-                  return (
-                    <div
-                      key={document}
-                      class={
-                        `hc-doc-upload-row ` +
-                        (
-                          result
-                            ? `status-${result.status}`
-                            : ''
-                        )
-                      }
-                    >
-                      <div class="hc-doc-upload-info">
-                        <span class="hc-doc-upload-label">
-                          {document}
+              {category.requiredDocuments.map((doc) => {
+                const file = documentFiles[doc]
+                const uaeDocument = matchDocument(doc)
+                const result = docAiResults?.requirements?.find((r) => r.label === doc)
+                return (
+                  <div key={doc} class={`hc-doc-upload-row ${uaeDocument ? 'status-ok' : result ? `status-${result.status}` : ''}`}>
+                    <div class="hc-doc-upload-info">
+                      <span class="hc-doc-upload-label">{doc}</span>
+                      {uaeDocument && <><UaePassBadge /><span class="hc-doc-upload-filename">{uaeDocument.fileName}</span></>}
+                      {file && <span class="hc-doc-upload-filename">{file.name}</span>}
+                      {result && (
+                        <span class={`hc-doc-status hc-doc-status-${result.status}`}>
+                          {result.status === 'ok' && `✓ ${ht.aiDocStatusOk}`}
+                          {result.status === 'missing' && `✗ ${ht.aiDocStatusMissing}`}
+                          {result.status === 'unclear' && `! ${ht.aiDocStatusUnclear}`}
+                          <span class="hc-doc-status-reason">{result.reason}</span>
                         </span>
-
-                        {file && (
-                          <span class="hc-doc-upload-filename">
-                            {file.name}
-                          </span>
-                        )}
-
-                        {result && (
-                          <span
-                            class={
-                              `hc-doc-status ` +
-                              `hc-doc-status-${result.status}`
-                            }
-                          >
-                            {result.status ===
-                              'ok' &&
-                              `✓ ${ht.aiDocStatusOk}`}
-
-                            {result.status ===
-                              'missing' &&
-                              `✗ ${ht.aiDocStatusMissing}`}
-
-                            {result.status ===
-                              'unclear' &&
-                              `! ${ht.aiDocStatusUnclear}`}
-
-                            <span class="hc-doc-status-reason">
-                              {
-                                result.reason
-                              }
-                            </span>
-                          </span>
-                        )}
-                      </div>
-
-                      <div class="hc-doc-upload-actions">
-                        <label class="hc-doc-upload-btn">
-                          {file
-                            ? ht.replace
-                            : ht.upload}
-
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,application/pdf"
-                            onChange={(
-                              event
-                            ) => {
-                              const selectedFile =
-                                event
-                                  .target
-                                  .files[0]
-
-                              if (
-                                selectedFile
-                              ) {
-                                attachDocumentFile(
-                                  document,
-                                  selectedFile
-                                )
-                              }
-                            }}
-                          />
-                        </label>
-
-                        {file && (
-                          <button
-                            type="button"
-                            class="hc-doc-remove-btn"
-                            onClick={() =>
-                              removeDocumentFile(
-                                document
-                              )
-                            }
-                          >
-                            {ht.remove}
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  )
-                }
-              )}
+                    <div class="hc-doc-upload-actions">
+                      {!uaeDocument && <label class="hc-doc-upload-btn">
+                        {file ? ht.replace : ht.upload}
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => e.target.files[0] && attachDocumentFile(doc, e.target.files[0])}
+                        />
+                      </label>}
+                      {file && (
+                        <button type="button" class="hc-doc-remove-btn" onClick={() => removeDocumentFile(doc)}>
+                          {ht.remove}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
-            {docAiError && (
-              <p class="hc-error">
-                {docAiError}
-              </p>
-            )}
+            {docAiError && <p class="hc-error">{docAiError}</p>}
 
-            {docAiResults &&
-              !docAiResults
-                .aiEnabled && (
-                <p class="hc-hint hc-ai-note">
-                  {
-                    ht.aiUnavailableNote
-                  }
-                </p>
-              )}
+            {docAiResults && !docAiResults.aiEnabled && (
+              <p class="hc-hint hc-ai-note">{ht.aiUnavailableNote}</p>
+            )}
 
             <button
               type="button"
               class="hc-check-button"
-              disabled={
-                !Object.keys(
-                  documentFiles
-                ).length ||
-                docAiChecking
-              }
-              onClick={
-                runDocAiCheck
-              }
+              disabled={Object.keys(documentFiles).length === 0 || docAiChecking}
+              onClick={runDocAiCheck}
             >
-              {docAiChecking
-                ? ht.aiDocChecking
-                : ht.aiDocCheckButton}
+              {docAiChecking ? ht.aiDocChecking : ht.aiDocCheckButton}
             </button>
           </div>
 
           <div class="hc-field">
             <label>
               {ht.statementLabel}
-
               <span class="hc-word-hint">
-                {ht.wordsMinimum(
-                  statement.trim()
-                    ? statement
-                        .trim()
-                        .split(/\s+/)
-                        .length
-                    : 0,
-
-                  category
-                    .minStatementWords
-                )}
+                {ht.wordsMinimum(statement.trim() ? statement.trim().split(/\s+/).length : 0, category.minStatementWords)}
               </span>
             </label>
-
             <textarea
               rows={8}
-              placeholder={
-                ht.statementPlaceholder
-              }
+              placeholder={ht.statementPlaceholder}
               value={statement}
-              onInput={(event) => {
-                setStatement(
-                  event.target.value
-                )
-
+              onInput={(e) => {
+                setStatement(e.target.value)
                 setStatementAi(null)
               }}
             />
@@ -872,238 +339,87 @@ export function HumanitarianCaseForm() {
               <button
                 type="button"
                 class="hc-ai-statement-button"
-                disabled={
-                  !statement.trim() ||
-                  statementAiChecking
-                }
-                onClick={
-                  runStatementAiCheck
-                }
+                disabled={!statement.trim() || statementAiChecking}
+                onClick={runStatementAiCheck}
               >
-                {statementAiChecking
-                  ? ht.statementAiChecking
-                  : ht.statementAiButton}
+                {statementAiChecking ? ht.statementAiChecking : ht.statementAiButton}
               </button>
 
-              {statementAiError && (
-                <p class="hc-error">
-                  {statementAiError}
-                </p>
-              )}
+              {statementAiError && <p class="hc-error">{statementAiError}</p>}
 
               {statementAi && (
                 <div class="hc-ai-statement-card">
-                  {statementAi
-                    .strengths
-                    .length > 0 && (
+                  {statementAi.strengths.length > 0 && (
                     <div class="hc-ai-statement-block">
-                      <strong>
-                        {
-                          ht.statementAiStrengths
-                        }
-                      </strong>
-
+                      <strong>{ht.statementAiStrengths}</strong>
                       <ul>
-                        {statementAi
-                          .strengths
-                          .map(
-                            (
-                              strength
-                            ) => (
-                              <li
-                                key={
-                                  strength
-                                }
-                              >
-                                {
-                                  strength
-                                }
-                              </li>
-                            )
-                          )}
+                        {statementAi.strengths.map((s) => (
+                          <li key={s}>{s}</li>
+                        ))}
                       </ul>
                     </div>
                   )}
-
-                  {statementAi
-                    .missingElements
-                    .length > 0 && (
+                  {statementAi.missingElements.length > 0 && (
                     <div class="hc-ai-statement-block">
-                      <strong>
-                        {
-                          ht.statementAiMissing
-                        }
-                      </strong>
-
+                      <strong>{ht.statementAiMissing}</strong>
                       <ul>
-                        {statementAi
-                          .missingElements
-                          .map(
-                            (
-                              missing
-                            ) => (
-                              <li
-                                key={
-                                  missing
-                                }
-                              >
-                                {
-                                  missing
-                                }
-                              </li>
-                            )
-                          )}
+                        {statementAi.missingElements.map((m) => (
+                          <li key={m}>{m}</li>
+                        ))}
                       </ul>
                     </div>
                   )}
-
-                  {statementAi
-                    .clarityTip && (
+                  {statementAi.clarityTip && (
                     <p class="hc-ai-statement-tip">
-                      <strong>
-                        {
-                          ht.statementAiTip
-                        }
-                        :
-                      </strong>{' '}
-                      {
-                        statementAi
-                          .clarityTip
-                      }
+                      <strong>{ht.statementAiTip}:</strong> {statementAi.clarityTip}
                     </p>
                   )}
-
                   <p class="hc-ai-disclaimer">
-                    {statementAi
-                      .aiEnabled
-                      ? ht.statementAiDisclaimer
-                      : ht.aiUnavailableNote}
+                    {statementAi.aiEnabled ? ht.statementAiDisclaimer : ht.aiUnavailableNote}
                   </p>
                 </div>
               )}
             </div>
           </div>
 
-          <button
-            type="button"
-            class="hc-check-button"
-            onClick={
-              handleCheckReadiness
-            }
-            disabled={checking}
-          >
-            {checking
-              ? ht.checking
-              : ht.checkReadiness}
+          <button type="button" class="hc-check-button" onClick={handleCheckReadiness} disabled={checking}>
+            {checking ? ht.checking : ht.checkReadiness}
           </button>
 
           {readiness && (
             <div class="hc-readiness-card">
               <div class="hc-readiness-bar-row">
-                <strong>
-                  {
-                    readiness
-                      .readinessPercent
-                  }
-                  %{' '}
-                  {
-                    humanitarian
-                      .dashboard
-                      .complete
-                  }
-                </strong>
+                <strong>{readiness.readinessPercent}% {humanitarian.dashboard.complete}</strong>
               </div>
-
               <div class="hc-readiness-bar">
-                <div
-                  class="hc-readiness-bar-fill"
-                  style={{
-                    width:
-                      `${readiness.readinessPercent}%`
-                  }}
-                />
+                <div class="hc-readiness-bar-fill" style={{ width: `${readiness.readinessPercent}%` }} />
               </div>
-
-              {readiness.flags
-                .length > 0 ? (
+              {readiness.flags.length > 0 ? (
                 <ul class="hc-flags">
-                  {readiness.flags.map(
-                    (flag) => (
-                      <li key={flag}>
-                        {flag}
-                      </li>
-                    )
-                  )}
+                  {readiness.flags.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
                 </ul>
               ) : (
-                <p class="hc-all-good">
-                  {ht.allGood}
-                </p>
+                <p class="hc-all-good">{ht.allGood}</p>
               )}
-
-              <p class="hc-note">
-                {readiness.note}
-              </p>
+              <p class="hc-note">{readiness.note}</p>
             </div>
           )}
 
-          <form
-            class="hc-submit-form"
-            onSubmit={
-              handleSubmit
-            }
-          >
+          <form class="hc-submit-form" onSubmit={handleSubmit}>
             <div class="hc-field">
-              <label>
-                {ht.fullName}
-              </label>
-
-              <input
-                type="text"
-                required
-                value={
-                  applicantName
-                }
-                onInput={(event) =>
-                  setApplicantName(
-                    event.target.value
-                  )
-                }
-              />
+              <label>{ht.fullName} <UaePassBadge /></label>
+              <input type="text" required value={applicantName} onInput={(e) => setApplicantName(e.target.value)} />
             </div>
-
             <div class="hc-field">
-              <label>
-                {ht.email}
-              </label>
-
-              <input
-                type="email"
-                required
-                value={
-                  applicantEmail
-                }
-                onInput={(event) =>
-                  setApplicantEmail(
-                    event.target.value
-                  )
-                }
-              />
+              <label>{ht.email} <UaePassBadge /></label>
+              <input type="email" required value={applicantEmail} onInput={(e) => setApplicantEmail(e.target.value)} />
             </div>
-
-            <button
-              type="submit"
-              class="hc-submit-button"
-              disabled={submitting}
-            >
-              {submitting
-                ? ht.submitting
-                : ht.submitCase}
+            <button type="submit" class="hc-submit-button" disabled={submitting}>
+              {submitting ? ht.submitting : ht.submitCase}
             </button>
-
-            <p class="hc-hint">
-              {ht.submitHint}
-            </p>
+            <p class="hc-hint">{ht.submitHint}</p>
           </form>
         </>
       )}

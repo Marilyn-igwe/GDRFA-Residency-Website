@@ -1,0 +1,204 @@
+.up-login-card {
+  position: relative;
+  overflow: hidden;
+  padding-top: 48px;
+  text-align: center;
+}
+
+.up-uae-accent {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, #35d58a, #00b77a 48%, #0696aa);
+}
+
+.up-fingerprint {
+  width: 74px;
+  height: 86px;
+  margin: 0 auto 15px;
+  color: #202020;
+}
+
+.up-login-card h1 {
+  color: #40516f;
+  font-size: 29px;
+  font-weight: 400;
+}
+
+.up-login-form {
+  max-width: 500px;
+  margin: 35px auto 0;
+  text-align: left;
+}
+
+.up-login-form > input {
+  width: 100%;
+  height: 72px;
+  padding: 0 20px;
+  border: 1px solid #8ebeff;
+  border-radius: 16px;
+  box-shadow: 0 0 0 4px #d8eaff;
+  color: #465672;
+  font-size: 15px;
+}
+
+.up-login-form > input:focus {
+  outline: none;
+  border-color: #3399ff;
+}
+
+.up-remember {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 21px 0 18px;
+  color: #151515;
+  font-size: 14px;
+}
+
+.up-remember input {
+  width: 18px;
+  height: 18px;
+  accent-color: #087df0;
+}
+
+.up-account-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.up-account-options > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+}
+
+.up-account-options > button.selected {
+  border-color: #00a870;
+  background: #f2fbf7;
+  box-shadow: 0 0 0 1px #00a870;
+}
+
+.up-account-options .up-avatar {
+  width: 29px;
+  height: 29px;
+  background: #40516f;
+  font-size: 8px;
+}
+
+.up-account-options > button > span:last-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.up-account-options strong {
+  overflow: hidden;
+  color: #35445f;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.up-account-options small {
+  color: #8992a3;
+  font-size: 7px;
+}
+
+.up-login-button {
+  width: 100%;
+  height: 68px;
+  border: 0;
+  border-radius: 14px;
+  background: #8190ad;
+  color: #fff;
+  font-size: 25px;
+}
+
+.up-login-button:disabled {
+  opacity: 0.7;
+}
+
+.up-account-links {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin: 24px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid #ddd;
+  font-size: 13px;
+}
+
+.up-account-links button,
+.up-recover {
+  border: 0;
+  background: none;
+  color: #00a870;
+  font-size: 13px;
+}
+
+.up-recover {
+  display: block;
+  margin: 20px auto 0;
+}
+
+.up-banner {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  z-index: 12000;
+  width: min(390px, calc(100vw - 32px));
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 15px;
+  border: 1px solid #b9ddcf;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(25, 70, 55, 0.17);
+  animation: upToastIn 0.3s ease-out;
+}
+
+.up-banner-check {
+  width: 34px;
+  height: 34px;
+  background: #00a870;
+}
+
+.up-banner button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #71827c;
+  font-size: 18px;
+}
+
+.up-banner button:hover {
+  background: #eef7f3;
+}
+
+@keyframes upToastIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 650px) {
+  .up-banner { top: 12px; right: 16px; }
+  .up-login-form > input { height: 60px; font-size: 12px; }
+  .up-login-button { height: 56px; font-size: 20px; }
+  .up-account-links { flex-direction: column; gap: 4px; }
+  .up-account-options { grid-template-columns: 1fr; }
+}

@@ -251,6 +251,28 @@ a {
   font-size: 9px;
 }
 
+.profile-logout {
+  margin-left: 7px;
+  padding: 6px 9px;
+  border: 1px solid #d8d8d8;
+  border-radius: 4px;
+  background: #fff;
+  color: #666;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.profile-logout:hover {
+  border-color: #8a1c2f;
+  color: #8a1c2f;
+  background: #faf3ef;
+}
+
+[dir='rtl'] .profile-logout {
+  margin-right: 7px;
+  margin-left: 0;
+}
+
 /* =========================================
    HERO
 ========================================= */
