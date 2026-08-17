@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'preact/hooks'
 import { getServices, getAvailability, createAppointment, verifyDocuments, fileToBase64 } from './api'
 import './booking.css'
+import {
+  usePublishApplicationContext
+} from '../support/applicationContext'
 
 const STEPS = ['service', 'date', 'slot', 'documents', 'details', 'confirmation']
 
@@ -176,6 +179,70 @@ export function BookingFlow({ onSelectFamilyService }) {
   }
 
   const stepIndex = STEPS.indexOf(step)
+    const bookingStepNames = {
+    service: 'Service selection',
+    date: 'Appointment date',
+    slot: 'Center and time',
+    documents: 'Required documents',
+    details: 'Applicant details',
+    confirmation: 'Confirmation'
+  }
+
+  const bookingRequiredDocuments =
+    selectedService?.documents || []
+
+  const bookingMissingDocuments =
+    bookingRequiredDocuments.filter(
+      (document) =>
+        !documentFiles[document]
+    )
+
+  usePublishApplicationContext({
+    contextId: 'booking-application',
+
+    applicationType:
+      'appointment-booking',
+
+    serviceId:
+      selectedService?.id || '',
+
+    serviceName:
+      selectedService?.name ||
+      'GDRFA service application',
+
+    stepId: step,
+
+    stepName:
+      bookingStepNames[step] ||
+      step,
+
+    selectedCategory: '',
+
+    selectedApplicant:
+      step === 'details'
+        ? 'Primary applicant'
+        : '',
+
+    requiredDocuments:
+      bookingRequiredDocuments,
+
+    missingDocuments:
+      bookingMissingDocuments,
+
+    visibleErrors: [
+      availabilityError,
+      aiError,
+      submitError
+    ].filter(Boolean),
+
+    acceptedFileTypes: [
+      'application/pdf',
+      'image/jpeg',
+      'image/png'
+    ],
+
+    maximumFileSize: ''
+  })
 
   return (
     <div class="booking-flow">

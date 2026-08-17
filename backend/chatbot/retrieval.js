@@ -7,102 +7,262 @@ const SCRAPED_DATA_PATH = new URL(
   import.meta.url
 )
 
-const CACHE_TTL_MS = 5 * 60 * 1000
-const LIVE_CACHE_TTL_MS = 15 * 60 * 1000
-const GDRFA_ORIGIN = 'https://www.gdrfad.gov.ae'
+const GDRFA_ORIGIN =
+  'https://www.gdrfad.gov.ae'
 
-let cache = null
-let cacheLoadedAt = 0
+const LOCAL_CACHE_TTL_MS =
+  5 * 60 * 1000
 
-const liveCache = new Map()
+const LIVE_CACHE_TTL_MS =
+  15 * 60 * 1000
 
-async function loadScrapedServices() {
-  const now = Date.now()
+const REQUEST_TIMEOUT_MS = 9000
 
-  if (cache && now - cacheLoadedAt < CACHE_TTL_MS) {
-    return cache
+const MIN_SERVICE_SCORE = 1.15
+const MIN_SECTION_SCORE = 0.85
+
+const MAX_SEARCH_RESULTS = 10
+const MAX_SELECTED_SECTIONS = 6
+const MAX_CONTEXT_CHARACTERS = 18000
+
+const STOP_WORDS = new Set([
+  'about',
+  'after',
+  'again',
+  'application',
+  'asking',
+  'before',
+  'being',
+  'cannot',
+  'complete',
+  'completing',
+  'context',
+  'could',
+  'current',
+  'explain',
+  'field',
+  'form',
+  'from',
+  'guidance',
+  'help',
+  'information',
+  'label',
+  'labels',
+  'need',
+  'please',
+  'question',
+  'requirements',
+  'service',
+  'should',
+  'step',
+  'that',
+  'their',
+  'there',
+  'these',
+  'this',
+  'visible',
+  'what',
+  'when',
+  'where',
+  'which',
+  'with',
+  'would',
+  'your'
+])
+
+const QUERY_SYNONYMS = {
+  apply: ['application', 'issuance'],
+  cancel: ['cancellation'],
+  child: ['children', 'dependent', 'family'],
+  cost: ['fee', 'fees', 'price'],
+  daughter: ['child', 'family', 'dependent'],
+  document: ['documents', 'requirement', 'paper'],
+  documents: ['requirements', 'papers'],
+  expiry: ['expiration', 'validity'],
+  family: ['dependent', 'spouse', 'children'],
+  husband: ['spouse', 'family'],
+  job: ['employment', 'work'],
+  marriage: ['spouse', 'relationship'],
+  paper: ['document', 'requirement'],
+  passport: ['travel document'],
+  price: ['fee', 'cost'],
+  renew: ['renewal'],
+  renewing: ['renewal'],
+  residence: ['residency', 'permit'],
+  residency: ['residence', 'permit'],
+  salary: ['income', 'employment'],
+  son: ['child', 'family', 'dependent'],
+  upload: ['file', 'document'],
+  visa: ['residence', 'permit'],
+  wife: ['spouse', 'family']
+}
+
+const COMMON_CORRECTIONS = {
+  aplication: 'application',
+  appliction: 'application',
+  docment: 'document',
+  docments: 'documents',
+  documant: 'document',
+  documants: 'documents',
+  documnet: 'document',
+  documnts: 'documents',
+  eligibile: 'eligible',
+  eligibilty: 'eligibility',
+  expiary: 'expiry',
+  famly: 'family',
+  pasport: 'passport',
+  passprt: 'passport',
+  reqired: 'required',
+  requirment: 'requirement',
+  requirments: 'requirements',
+  resdence: 'residence',
+  residance: 'residence',
+  residensy: 'residency',
+  residncy: 'residency',
+  renawal: 'renewal',
+  renual: 'renewal',
+  renuwal: 'renewal',
+  uplod: 'upload',
+  uploud: 'upload'
+}
+
+const SECTION_PATTERNS = [
+  {
+    id: 'details',
+    pattern: /service details|description|about the service/i
+  },
+  {
+    id: 'requirements',
+    pattern: /requirements|required documents|documents required/i
+  },
+  {
+    id: 'eligibility',
+    pattern: /eligibility|eligible|terms and conditions|conditions/i
+  },
+  {
+    id: 'fees',
+    pattern: /fees|service fee|cost/i
+  },
+  {
+    id: 'completion',
+    pattern: /expected completion|completion time|processing time/i
+  },
+  {
+    id: 'channels',
+    pattern: /availability|service channels|channels/i
+  },
+  {
+    id: 'steps',
+    pattern: /service steps|steps and procedures|procedure/i
+  },
+  {
+    id: 'additional',
+    pattern: /additional information|important information|notes/i
+  }
+]
+
+let localCache = null
+let localCacheLoadedAt = 0
+
+const liveSearchCache = new Map()
+
+function cleanText(value) {
+  return String(value || '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function unique(values) {
+  return [...new Set(values)]
+}
+
+function correctToken(token) {
+  return COMMON_CORRECTIONS[token] || token
+}
+
+function tokenize(value) {
+  return normalize(value)
+    .map(correctToken)
+    .filter(
+      (token) =>
+        token.length > 2 &&
+        !STOP_WORDS.has(token)
+    )
+}
+
+function expandTokens(tokens) {
+  const expanded = []
+
+  for (const token of tokens) {
+    expanded.push(token)
+
+    const synonyms =
+      QUERY_SYNONYMS[token] || []
+
+    expanded.push(...synonyms)
   }
 
-  try {
-    const raw = await readFile(
-      SCRAPED_DATA_PATH,
-      'utf-8'
+  return unique(
+    expanded.flatMap((value) =>
+      tokenize(value)
     )
+  )
+}
 
-    const parsed = JSON.parse(raw)
+function extractApplicationContext(message) {
+  const application =
+    message.match(
+      /Application:\s*([^\n]+)/i
+    )?.[1]?.trim() || ''
 
-    if (!Array.isArray(parsed?.services)) {
-      throw new Error(
-        'services.scraped.json is missing its services array'
-      )
-    }
+  const step =
+    message.match(
+      /Current step:\s*([^\n]+)/i
+    )?.[1]?.trim() || ''
 
-    cache = parsed.services
-    cacheLoadedAt = now
+  const visibleDetails =
+    message.match(
+      /Visible requirements and labels:\s*([^\n]+)/i
+    )?.[1]?.trim() || ''
 
-    return cache
-  } catch (error) {
-    console.warn(
-      'Could not load the local GDRFA service index:',
-      error.message
-    )
+  const question =
+    message.split('\n')[0]?.trim() || ''
 
-    return []
+  return {
+    application,
+    step,
+    visibleDetails,
+    question
   }
 }
 
-function serviceToText(service) {
-  const lines = [
-    `# ${service.name}`,
-    `Source: ${service.sourceUrl}`
-  ]
+function createSearchQuery(message) {
+  const context =
+    extractApplicationContext(message)
 
-  if (service.documents?.length) {
-    lines.push('Requirements:')
-
-    lines.push(
-      ...service.documents.map(
-        (document) => `- ${document}`
-      )
-    )
-  }
-
-  if (service.feeBreakdown?.length) {
-    lines.push('Fees:')
-
-    lines.push(
-      ...service.feeBreakdown.map(
-        (fee) => `- ${fee.label}: AED ${fee.amount}`
-      )
+  const applicationTokens =
+    expandTokens(
+      tokenize(context.application)
     )
 
-    if (service.feeTotalAed) {
-      lines.push(
-        `- Total: AED ${service.feeTotalAed}`
-      )
-    }
-  }
-
-  if (service.expectedCompletionHours) {
-    lines.push(
-      `Expected completion time: ` +
-        `${service.expectedCompletionHours} hour(s)`
+  const questionTokens =
+    expandTokens(
+      tokenize(context.question)
     )
-  }
 
-  if (service.availability) {
-    lines.push(
-      `Availability: ${service.availability}`
+  const detailTokens =
+    expandTokens(
+      tokenize(context.visibleDetails)
     )
-  }
 
-  if (service.additionalInfo) {
-    lines.push(
-      `Additional information: ${service.additionalInfo}`
-    )
-  }
+  const selected = unique([
+    ...applicationTokens,
+    ...questionTokens,
+    ...detailTokens
+  ]).slice(0, 14)
 
-  return lines.join('\n')
+  return selected.join(' ')
 }
 
 function editDistance(left, right) {
@@ -111,20 +271,35 @@ function editDistance(left, right) {
     (_, index) => index
   )
 
-  for (let i = 1; i <= left.length; i++) {
+  for (
+    let leftIndex = 1;
+    leftIndex <= left.length;
+    leftIndex++
+  ) {
     let diagonal = previous[0]
 
-    previous[0] = i
+    previous[0] = leftIndex
 
-    for (let j = 1; j <= right.length; j++) {
-      const saved = previous[j]
+    for (
+      let rightIndex = 1;
+      rightIndex <= right.length;
+      rightIndex++
+    ) {
+      const saved =
+        previous[rightIndex]
 
-      previous[j] = Math.min(
-        previous[j] + 1,
-        previous[j - 1] + 1,
-        diagonal +
-          (left[i - 1] === right[j - 1] ? 0 : 1)
-      )
+      previous[rightIndex] =
+        Math.min(
+          previous[rightIndex] + 1,
+          previous[rightIndex - 1] + 1,
+          diagonal +
+            (
+              left[leftIndex - 1] ===
+              right[rightIndex - 1]
+                ? 0
+                : 1
+            )
+        )
 
       diagonal = saved
     }
@@ -138,167 +313,315 @@ function wordSimilarity(left, right) {
     return 1
   }
 
-  if (left.length < 4 || right.length < 4) {
+  if (
+    left.length < 4 ||
+    right.length < 4
+  ) {
     return 0
   }
 
-  const distance = editDistance(left, right)
+  const distance =
+    editDistance(left, right)
 
-  const ratio =
+  const similarity =
     1 -
     distance /
-      Math.max(left.length, right.length)
+      Math.max(
+        left.length,
+        right.length
+      )
 
-  return ratio >= 0.72 ? ratio : 0
+  return similarity >= 0.72
+    ? similarity
+    : 0
 }
 
-function trigrams(text) {
-  const value = `  ${text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()}  `
+function createTrigrams(value) {
+  const normalized =
+    `  ${cleanText(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')}  `
 
-  const result = new Set()
+  const grams = new Set()
 
   for (
     let index = 0;
-    index < value.length - 2;
+    index < normalized.length - 2;
     index++
   ) {
-    result.add(value.slice(index, index + 3))
+    grams.add(
+      normalized.slice(
+        index,
+        index + 3
+      )
+    )
   }
 
-  return result
+  return grams
 }
 
-function phraseSimilarity(leftText, rightText) {
-  const left = trigrams(leftText)
-  const right = trigrams(rightText)
+function phraseSimilarity(left, right) {
+  const leftGrams =
+    createTrigrams(left)
 
-  if (!left.size || !right.size) {
+  const rightGrams =
+    createTrigrams(right)
+
+  if (
+    !leftGrams.size ||
+    !rightGrams.size
+  ) {
     return 0
   }
 
   let shared = 0
 
-  for (const gram of left) {
-    if (right.has(gram)) {
+  for (const gram of leftGrams) {
+    if (rightGrams.has(gram)) {
       shared++
     }
   }
 
   return (
     (2 * shared) /
-    (left.size + right.size)
-  )
-}
-
-function searchableText(service) {
-  return [
-    service.name,
-    ...(service.documents || []),
-    ...(service.feeBreakdown || []).map(
-      (fee) => fee.label
-    ),
-    service.availability,
-    service.additionalInfo
-  ]
-    .filter(Boolean)
-    .join(' ')
-}
-
-function scoreService(service, message) {
-  const queryTokens = normalize(message).filter(
-    (token) => token.length > 2
-  )
-
-  const serviceTokens = [
-    ...new Set(
-      normalize(
-        searchableText(service)
-      ).filter((token) => token.length > 2)
+    (
+      leftGrams.size +
+      rightGrams.size
     )
-  ]
+  )
+}
 
-  let tokenScore = 0
+function tokenCoverage(
+  queryTokens,
+  candidateTokens
+) {
+  if (!queryTokens.length) {
+    return 0
+  }
+
+  let score = 0
 
   for (const queryToken of queryTokens) {
-    let best = 0
+    let bestMatch = 0
 
-    for (const serviceToken of serviceTokens) {
-      best = Math.max(
-        best,
+    for (
+      const candidateToken
+      of candidateTokens
+    ) {
+      bestMatch = Math.max(
+        bestMatch,
         wordSimilarity(
           queryToken,
-          serviceToken
+          candidateToken
         )
       )
 
-      if (best === 1) {
+      if (bestMatch === 1) {
         break
       }
     }
 
-    tokenScore += best
+    score += bestMatch
   }
 
-  const titleScore =
-    phraseSimilarity(
-      message,
-      service.name
-    ) * 4
-
-  const coverage = queryTokens.length
-    ? tokenScore /
-      Math.sqrt(queryTokens.length)
-    : 0
-
-  return titleScore + coverage
+  return score / queryTokens.length
 }
 
-function queryFromMessage(message) {
-  const application = message.match(
-    /Application:\s*([^\n]+)/i
-  )?.[1]?.trim()
+function determineRequestedSection(
+  message
+) {
+  const tokens = new Set(
+    tokenize(message)
+  )
 
-  const question = message
-    .split('\n')[0]
-    .trim()
+  if (
+    tokens.has('document') ||
+    tokens.has('documents') ||
+    tokens.has('paper') ||
+    tokens.has('papers') ||
+    tokens.has('passport')
+  ) {
+    return 'requirements'
+  }
 
-  const combined =
-    `${application || ''} ${question}`
+  if (
+    tokens.has('fee') ||
+    tokens.has('fees') ||
+    tokens.has('cost') ||
+    tokens.has('price')
+  ) {
+    return 'fees'
+  }
 
-  return [
-    ...new Set(
-      normalize(combined).filter(
-        (word) => word.length > 2
+  if (
+    tokens.has('eligible') ||
+    tokens.has('eligibility') ||
+    tokens.has('qualify')
+  ) {
+    return 'eligibility'
+  }
+
+  if (
+    tokens.has('time') ||
+    tokens.has('processing') ||
+    tokens.has('completion')
+  ) {
+    return 'completion'
+  }
+
+  if (
+    tokens.has('apply') ||
+    tokens.has('procedure') ||
+    tokens.has('steps')
+  ) {
+    return 'steps'
+  }
+
+  if (
+    tokens.has('where') ||
+    tokens.has('channel') ||
+    tokens.has('channels')
+  ) {
+    return 'channels'
+  }
+
+  return null
+}
+
+function scoreService(
+  service,
+  message
+) {
+  const context =
+    extractApplicationContext(message)
+
+  const queryTokens =
+    expandTokens(tokenize(message))
+
+  const titleTokens =
+    expandTokens(
+      tokenize(service.name)
+    )
+
+  const serviceTokens =
+    expandTokens(
+      tokenize(
+        [
+          service.name,
+          ...(service.sections || [])
+            .map(
+              (section) =>
+                section.text
+            )
+        ].join(' ')
       )
     )
-  ]
-    .slice(0, 12)
-    .join(' ')
+
+  const applicationTitleScore =
+    context.application
+      ? phraseSimilarity(
+          context.application,
+          service.name
+        ) * 5
+      : 0
+
+  const questionTitleScore =
+    phraseSimilarity(
+      context.question,
+      service.name
+    ) * 2.5
+
+  const titleCoverage =
+    tokenCoverage(
+      queryTokens,
+      titleTokens
+    ) * 2
+
+  const contentCoverage =
+    tokenCoverage(
+      queryTokens,
+      serviceTokens
+    )
+
+  return (
+    applicationTitleScore +
+    questionTitleScore +
+    titleCoverage +
+    contentCoverage
+  )
+}
+
+function scoreSection(
+  service,
+  section,
+  message
+) {
+  const requestedSection =
+    determineRequestedSection(message)
+
+  const queryTokens =
+    expandTokens(tokenize(message))
+
+  const sectionTokens =
+    expandTokens(
+      tokenize(
+        `${section.title} ${section.text}`
+      )
+    )
+
+  const serviceScore =
+    scoreService(service, message)
+
+  const coverage =
+    tokenCoverage(
+      queryTokens,
+      sectionTokens
+    ) * 2
+
+  const phraseScore =
+    phraseSimilarity(
+      message,
+      `${service.name} ${section.title}`
+    )
+
+  const sectionTypeBonus =
+    requestedSection &&
+    requestedSection === section.id
+      ? 2.5
+      : 0
+
+  return (
+    serviceScore * 0.45 +
+    coverage +
+    phraseScore +
+    sectionTypeBonus
+  )
 }
 
 async function fetchHtml(url) {
-  const controller = new AbortController()
+  const controller =
+    new AbortController()
 
-  const timeout = setTimeout(() => {
-    controller.abort()
-  }, 9000)
+  const timeout = setTimeout(
+    () => controller.abort(),
+    REQUEST_TIMEOUT_MS
+  )
 
   try {
-    const response = await fetch(url, {
-      signal: controller.signal,
+    const response =
+      await fetch(url, {
+        signal: controller.signal,
 
-      headers: {
-        'User-Agent':
-          'GDRFA-Application-Support/1.0'
-      }
-    })
+        headers: {
+          Accept: 'text/html',
+          'User-Agent':
+            'GDRFA-Application-Support/1.0'
+        }
+      })
 
     if (!response.ok) {
       throw new Error(
-        `GDRFA request failed with ` +
+        `Official site returned ` +
           `${response.status}`
       )
     }
@@ -309,237 +632,383 @@ async function fetchHtml(url) {
   }
 }
 
-function extractOfficialPage(url, html) {
+function findSectionType(title) {
+  for (
+    const section
+    of SECTION_PATTERNS
+  ) {
+    if (
+      section.pattern.test(title)
+    ) {
+      return section.id
+    }
+  }
+
+  return 'general'
+}
+
+function extractFollowingText(
+  $,
+  heading
+) {
+  const headingLevel =
+    heading.tagName?.toLowerCase()
+
+  let node = $(heading).next()
+  let text = ''
+
+  while (node.length) {
+    const tagName =
+      node.get(0)
+        ?.tagName
+        ?.toLowerCase()
+
+    if (
+      tagName &&
+      /^h[2-6]$/.test(tagName)
+    ) {
+      break
+    }
+
+    text += ` ${node.text()}`
+    node = node.next()
+  }
+
+  if (!text && headingLevel) {
+    const parent = $(heading).parent()
+
+    text = parent
+      .text()
+      .replace(
+        $(heading).text(),
+        ''
+      )
+  }
+
+  return cleanText(text)
+}
+
+function extractOfficialService(
+  url,
+  html
+) {
   const $ = cheerio.load(html)
 
-  const title =
-    $('h1')
-      .first()
-      .text()
-      .replace(/\s+/g, ' ')
-      .trim() ||
-    $('title').text().trim()
-
-  const usefulLabels =
-    /service details|requirements|required documents|fees|completion|availability|additional information|terms and conditions|service steps|eligibility/i
+  const name =
+    cleanText(
+      $('h1').first().text()
+    ) ||
+    cleanText(
+      $('title').text()
+    )
 
   const sections = []
 
   $('h2, h3, h4, h5, h6').each(
     (_, heading) => {
-      const label = $(heading)
-        .text()
-        .replace(/\s+/g, ' ')
-        .trim()
+      const title =
+        cleanText(
+          $(heading).text()
+        )
 
-      if (!usefulLabels.test(label)) {
+      if (!title) {
         return
       }
 
-      let node = $(heading).next()
-      let text = ''
-
-      while (
-        node.length &&
-        !/^h[2-6]$/i.test(
-          node.get(0)?.tagName || ''
+      const sectionType =
+        SECTION_PATTERNS.find(
+          (section) =>
+            section.pattern.test(title)
         )
-      ) {
-        text += ` ${node.text()}`
-        node = node.next()
+
+      if (!sectionType) {
+        return
       }
 
-      text = text
-        .replace(/\s+/g, ' ')
-        .trim()
-
-      if (text) {
-        sections.push(
-          `${label}: ${text}`
+      const text =
+        extractFollowingText(
+          $,
+          heading
         )
+
+      if (!text) {
+        return
       }
+
+      sections.push({
+        id: sectionType.id,
+        title,
+        text: text.slice(0, 7000)
+      })
     }
   )
 
   if (!sections.length) {
-    const mainText = $('#main-content, main')
-      .first()
-      .text()
-      .replace(/\s+/g, ' ')
-      .trim()
+    const mainText =
+      cleanText(
+        $('#main-content, main')
+          .first()
+          .text()
+      )
 
     if (mainText) {
-      sections.push(
-        mainText.slice(0, 12000)
-      )
+      sections.push({
+        id: 'general',
+        title: 'Service information',
+        text: mainText.slice(
+          0,
+          10000
+        )
+      })
     }
   }
 
   return {
-    name: title,
+    name,
     sourceUrl: url,
-    content: sections
-      .join('\n')
-      .slice(0, 14000)
+    sections
   }
 }
 
-async function retrieveLiveServices(
-  message,
-  { topN }
-) {
-  const query = queryFromMessage(message)
+async function loadLocalServices() {
+  const now = Date.now()
 
-  if (!query) {
-    return {
-      context: '',
-      sources: [],
-      available: false
-    }
+  if (
+    localCache &&
+    now - localCacheLoadedAt <
+      LOCAL_CACHE_TTL_MS
+  ) {
+    return localCache
   }
 
-  const cached = liveCache.get(query)
+  try {
+    const raw = await readFile(
+      SCRAPED_DATA_PATH,
+      'utf-8'
+    )
+
+    const parsed = JSON.parse(raw)
+
+    if (
+      !Array.isArray(
+        parsed?.services
+      )
+    ) {
+      return []
+    }
+
+    localCache =
+      parsed.services.map(
+        (service) => {
+          const sections = []
+
+          if (
+            service.documents?.length
+          ) {
+            sections.push({
+              id: 'requirements',
+              title: 'Requirements',
+              text:
+                service.documents.join(
+                  '\n'
+                )
+            })
+          }
+
+          if (
+            service.feeBreakdown?.length
+          ) {
+            sections.push({
+              id: 'fees',
+              title: 'Fees',
+              text:
+                service.feeBreakdown
+                  .map(
+                    (fee) =>
+                      `${fee.label}: ` +
+                      `AED ${fee.amount}`
+                  )
+                  .join('\n')
+            })
+          }
+
+          if (
+            service
+              .expectedCompletionHours
+          ) {
+            sections.push({
+              id: 'completion',
+              title:
+                'Expected completion time',
+              text:
+                `${service.expectedCompletionHours} hour(s)`
+            })
+          }
+
+          if (
+            service.availability
+          ) {
+            sections.push({
+              id: 'channels',
+              title:
+                'Service availability',
+              text:
+                service.availability
+            })
+          }
+
+          if (
+            service.additionalInfo
+          ) {
+            sections.push({
+              id: 'additional',
+              title:
+                'Additional information',
+              text:
+                service.additionalInfo
+            })
+          }
+
+          return {
+            name: service.name,
+            sourceUrl:
+              service.sourceUrl,
+            sections
+          }
+        }
+      )
+
+    localCacheLoadedAt = now
+
+    return localCache
+  } catch {
+    return []
+  }
+}
+
+async function searchOfficialWebsite(
+  message
+) {
+  const query =
+    createSearchQuery(message)
+
+  if (!query) {
+    return []
+  }
+
+  const cacheKey =
+    query.toLowerCase()
+
+  const cached =
+    liveSearchCache.get(cacheKey)
 
   if (
     cached &&
     Date.now() - cached.loadedAt <
       LIVE_CACHE_TTL_MS
   ) {
-    return cached.result
+    return cached.services
   }
 
-  try {
-    const searchUrl =
-      `${GDRFA_ORIGIN}/en/search-website?` +
-      `search_api_fulltext=` +
-      encodeURIComponent(query)
+  const searchUrl =
+    `${GDRFA_ORIGIN}` +
+    `/en/search-website?` +
+    `search_api_fulltext=` +
+    encodeURIComponent(query)
 
-    const searchHtml =
-      await fetchHtml(searchUrl)
+  const searchHtml =
+    await fetchHtml(searchUrl)
 
-    const $ = cheerio.load(searchHtml)
-    const urls = []
+  const $ =
+    cheerio.load(searchHtml)
 
-    $('a[href*="/en/services/"]').each(
-      (_, element) => {
-        const href =
-          $(element).attr('href')
+  const urls = []
 
-        if (!href) return
+  $('a[href*="/en/services/"]').each(
+    (_, element) => {
+      const href =
+        $(element).attr('href')
 
-        const url = new URL(
-          href,
-          GDRFA_ORIGIN
+      if (!href) {
+        return
+      }
+
+      const url = new URL(
+        href,
+        GDRFA_ORIGIN
+      )
+
+      if (
+        url.hostname !==
+        'www.gdrfad.gov.ae'
+      ) {
+        return
+      }
+
+      if (
+        !/^\/en\/services\/[a-f0-9-]{36}\/?$/i.test(
+          url.pathname
+        )
+      ) {
+        return
+      }
+
+      const normalized =
+        `${url.origin}` +
+        url.pathname.replace(
+          /\/$/,
+          ''
         )
 
-        if (
-          url.hostname !==
-          'www.gdrfad.gov.ae'
-        ) {
-          return
-        }
-
-        if (
-          !/^\/en\/services\/[a-f0-9-]{36}\/?$/i.test(
-            url.pathname
-          )
-        ) {
-          return
-        }
-
-        const normalized =
-          `${url.origin}` +
-          url.pathname.replace(/\/$/, '')
-
-        if (!urls.includes(normalized)) {
-          urls.push(normalized)
-        }
+      if (!urls.includes(normalized)) {
+        urls.push(normalized)
       }
-    )
-
-    const pages = (
-      await Promise.all(
-        urls
-          .slice(
-            0,
-            Math.max(topN, 3)
-          )
-          .map(async (url) => {
-            try {
-              const html =
-                await fetchHtml(url)
-
-              return extractOfficialPage(
-                url,
-                html
-              )
-            } catch {
-              return null
-            }
-          })
-      )
-    ).filter((page) => page?.content)
-
-    const result = pages.length
-      ? {
-          context: pages
-            .map(
-              (page) =>
-                `# ${page.name}\n` +
-                `Source: ${page.sourceUrl}\n` +
-                page.content
-            )
-            .join('\n\n---\n\n'),
-
-          sources: pages.map((page) => ({
-            title: page.name,
-            url: page.sourceUrl
-          })),
-
-          available: true,
-          live: true
-        }
-      : {
-          context: '',
-          sources: [],
-          available: false
-        }
-
-    liveCache.set(query, {
-      loadedAt: Date.now(),
-      result
-    })
-
-    return result
-  } catch (error) {
-    console.warn(
-      'Live GDRFA service search failed:',
-      error.message
-    )
-
-    return {
-      context: '',
-      sources: [],
-      available: false
     }
-  }
+  )
+
+  const services = (
+    await Promise.all(
+      urls
+        .slice(
+          0,
+          MAX_SEARCH_RESULTS
+        )
+        .map(async (url) => {
+          try {
+            const html =
+              await fetchHtml(url)
+
+            return extractOfficialService(
+              url,
+              html
+            )
+          } catch {
+            return null
+          }
+        })
+    )
+  ).filter(
+    (service) =>
+      service?.name &&
+      service.sections?.length
+  )
+
+  liveSearchCache.set(
+    cacheKey,
+    {
+      loadedAt: Date.now(),
+      services
+    }
+  )
+
+  return services
 }
 
-export async function retrieveRelevantServices(
-  message,
-  { topN = 4 } = {}
+function rankServices(
+  services,
+  message
 ) {
-  const services =
-    await loadScrapedServices()
-
-  if (services.length === 0) {
-    return retrieveLiveServices(
-      message,
-      { topN }
-    )
-  }
-
-  const ranked = services
+  return services
     .map((service) => ({
       service,
       score: scoreService(
@@ -547,31 +1016,236 @@ export async function retrieveRelevantServices(
         message
       )
     }))
-    .filter(
-      (entry) => entry.score >= 0.65
-    )
     .sort(
       (left, right) =>
         right.score - left.score
     )
-    .slice(0, topN)
+}
 
-  const chosen = ranked.length
-    ? ranked.map(
-        (entry) => entry.service
+function rankSections(
+  services,
+  message
+) {
+  const ranked = []
+
+  for (const service of services) {
+    for (
+      const section
+      of service.sections
+    ) {
+      ranked.push({
+        service,
+        section,
+        score: scoreSection(
+          service,
+          section,
+          message
+        )
+      })
+    }
+  }
+
+  return ranked.sort(
+    (left, right) =>
+      right.score - left.score
+  )
+}
+
+function formatContext(
+  rankedSections
+) {
+  let context = ''
+
+  for (
+    const result
+    of rankedSections
+  ) {
+    const block =
+      `Service: ` +
+      `${result.service.name}\n` +
+      `Section: ` +
+      `${result.section.title}\n` +
+      `Official URL: ` +
+      `${result.service.sourceUrl}\n` +
+      `${result.section.text}`
+
+    if (
+      context.length +
+        block.length >
+      MAX_CONTEXT_CHARACTERS
+    ) {
+      break
+    }
+
+    context += context
+      ? `\n\n---\n\n${block}`
+      : block
+  }
+
+  return context
+}
+
+export async function retrieveRelevantServices(
+  message
+) {
+  const localServices =
+    await loadLocalServices()
+
+  let candidateServices = [
+    ...localServices
+  ]
+
+  try {
+    const liveServices =
+      await searchOfficialWebsite(
+        message
       )
-    : services.slice(0, topN)
+
+    const servicesByUrl =
+      new Map()
+
+    for (
+      const service
+      of [
+        ...localServices,
+        ...liveServices
+      ]
+    ) {
+      servicesByUrl.set(
+        service.sourceUrl,
+        service
+      )
+    }
+
+    candidateServices = [
+      ...servicesByUrl.values()
+    ]
+  } catch (error) {
+    console.warn(
+      'Official GDRFA search failed:',
+      error.message
+    )
+  }
+
+  if (!candidateServices.length) {
+    return {
+      available: false,
+      confident: false,
+      reason:
+        'official-information-unavailable',
+      confidence: 0,
+      context: '',
+      sources: []
+    }
+  }
+
+  const rankedServices =
+    rankServices(
+      candidateServices,
+      message
+    )
+
+  const bestService =
+    rankedServices[0]
+
+  if (
+    !bestService ||
+    bestService.score <
+      MIN_SERVICE_SCORE
+  ) {
+    return {
+      available: true,
+      confident: false,
+      reason:
+        'no-confident-service-match',
+      confidence:
+        bestService?.score || 0,
+      context: '',
+      sources: []
+    }
+  }
+
+  const qualifiedServices =
+    rankedServices
+      .filter(
+        (result) =>
+          result.score >=
+          MIN_SERVICE_SCORE
+      )
+      .slice(0, 4)
+      .map(
+        (result) =>
+          result.service
+      )
+
+  const rankedSections =
+    rankSections(
+      qualifiedServices,
+      message
+    )
+      .filter(
+        (result) =>
+          result.score >=
+          MIN_SECTION_SCORE
+      )
+      .slice(
+        0,
+        MAX_SELECTED_SECTIONS
+      )
+
+  if (!rankedSections.length) {
+    return {
+      available: true,
+      confident: false,
+      reason:
+        'no-confident-section-match',
+      confidence:
+        bestService.score,
+      context: '',
+      sources: []
+    }
+  }
+
+  const context =
+    formatContext(
+      rankedSections
+    )
+
+  const sources = unique(
+    rankedSections.map(
+      (result) =>
+        result.service.sourceUrl
+    )
+  ).map((url) => {
+    const result =
+      rankedSections.find(
+        (item) =>
+          item.service.sourceUrl ===
+          url
+      )
+
+    return {
+      title:
+        result.service.name,
+      url
+    }
+  })
+
+  const confidence =
+    Math.min(
+      1,
+      rankedSections[0].score /
+        5
+    )
 
   return {
-    context: chosen
-      .map(serviceToText)
-      .join('\n\n---\n\n'),
-
-    sources: chosen.map((service) => ({
-      title: service.name,
-      url: service.sourceUrl
-    })),
-
-    available: true
+    available: true,
+    confident: true,
+    reason: 'matched',
+    confidence,
+    matchedService:
+      bestService.service.name,
+    context,
+    sources
   }
 }
