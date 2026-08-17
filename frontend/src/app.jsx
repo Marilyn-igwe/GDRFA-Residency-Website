@@ -16,6 +16,7 @@ import { translations } from './language/translations'
 import { LanguageContext, buildLanguageContextValue } from './language/LanguageContext'
 import { useAccessibility } from './accessibility/AccessibilityContext'
 import { AccessibilityWidget } from './accessibility/AccessibilityWidget'
+import { ApplicationSupport } from './support/ApplicationSupport'
 import { UaePassGateway } from './uaepass/UaePassGateway'
 import { UaePassBanner } from './uaepass/UaePassDocuments'
 import { useUaePass } from './uaepass/UaePassContext'
@@ -174,6 +175,7 @@ export function App() {
         {view === 'committee' && staffTab === 'family' && <FamilyCommitteeDashboard />}
         {view === 'family' && <FamilyApplicationFlow />}
         {view === 'humanitarian' ? <ChatWidget /> : view === 'committee' ? <EmployeeAssistant /> : <ChatWidget />}
+        {view !== 'committee' && <ApplicationSupport />}
         <AccessibilityWidget />
       </div>
       </LanguageContext.Provider>
@@ -212,6 +214,7 @@ export function App() {
           }}
         />
         <ChatWidget />
+        <ApplicationSupport />
         <AccessibilityWidget />
       </div>
       </LanguageContext.Provider>
