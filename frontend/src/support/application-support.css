@@ -1,9 +1,13 @@
 .application-support {
   position: fixed;
   right: 24px;
-  top: 50%;
+  /* Stacked directly above the chat widget (bottom: 24px, ~54px tall)
+     instead of pinned to the vertical center of the right edge — that
+     put it floating in an unrelated spot from every other floating
+     control on the page, which read as three unrelated plugins bolted
+     on rather than one coherent set of help tools. */
+  bottom: 90px;
   z-index: 950;
-  transform: translateY(-50%);
 }
 
 .application-support-trigger {
@@ -13,7 +17,7 @@
   min-height: 44px;
   padding: 0 17px;
   border: 1px solid #8a1c2f;
-  border-radius: 5px;
+  border-radius: 24px;
   background: #8a1c2f;
   color: #fff;
   box-shadow: 0 8px 22px rgba(47, 23, 27, 0.18);
@@ -38,13 +42,12 @@
 .application-support-panel {
   position: absolute;
   right: 0;
-  top: 50%;
+  bottom: 0;
   width: min(390px, calc(100vw - 32px));
   max-height: min(680px, calc(100vh - 32px));
   overflow-y: auto;
-  transform: translateY(-50%);
   border: 1px solid #e1d8d3;
-  border-radius: 10px;
+  border-radius: 18px;
   background: #fff;
   box-shadow: 0 24px 60px rgba(35, 25, 27, 0.2);
   outline: none;

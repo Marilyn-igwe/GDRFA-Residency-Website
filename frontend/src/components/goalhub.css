@@ -6,31 +6,8 @@
   position: relative;
   width: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #fff 0%, #faf3ef 100%);
+  background: linear-gradient(165deg, #f2e4d6 0%, #faf6f1 55%, #fff 100%);
   border-bottom: 1px solid #eee1de;
-}
-
-/* Ambient glow behind the hero — the same radial-gradient recipe as the
-   language page's sphere (white → soft pink → deeper rose), so the very
-   first thing a person sees ties visually to the language screen instead
-   of introducing a second, unrelated visual language. */
-.goal-hub::before {
-  content: '';
-  position: absolute;
-  top: -220px;
-  left: 50%;
-  width: 620px;
-  height: 620px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 38% 38%, rgba(255, 255, 255, 0.9), rgba(230, 200, 206, 0.55) 55%, transparent 78%);
-  filter: blur(6px);
-  pointer-events: none;
-  animation: goal-blob-drift 14s ease-in-out infinite;
-}
-
-@keyframes goal-blob-drift {
-  0%, 100% { transform: translate(-50%, 0) scale(1); }
-  50% { transform: translate(-50%, 18px) scale(1.04); }
 }
 
 .goal-hub-inner {
@@ -69,110 +46,241 @@
   animation: goal-fade-in 0.5s ease 0.1s both;
 }
 
-.goal-hub-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
+/* =========================================
+   FEATURED PANEL
+   Reflects whichever card is currently selected in the strip below —
+   icon, full title, description, and the one actual "go" button.
+========================================= */
 
-.goal-card {
-  position: relative;
+.goal-featured {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
+  align-items: center;
+  gap: 20px;
   text-align: left;
-
-  padding: 26px 22px 24px;
-
+  padding: 22px 24px;
+  margin-bottom: 22px;
   background: #fff;
   border: 1px solid rgba(236, 224, 214, 0.9);
-  border-radius: 22px;
-  box-shadow: 0 2px 10px rgba(60, 30, 25, 0.04);
-
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 0.3s ease;
-
-  animation: goal-card-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(60, 30, 25, 0.06);
+  animation: goal-featured-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.goal-card:hover,
-.goal-card:focus-visible {
-  transform: translateY(-6px) scale(1.015);
-  border-color: transparent;
-  box-shadow: 0 22px 44px rgba(138, 28, 47, 0.16);
-  outline: none;
+@keyframes goal-featured-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.goal-card:active {
-  transform: translateY(-2px) scale(1.005);
-}
-
-/* Circular icon badge — same radial-gradient treatment as the language
-   page's sphere, scaled down. This is the direct answer to "too many
-   squares, make it a circle": every card's identity now sits inside a
-   soft glowing sphere instead of a flat corner glyph. */
-.goal-card-icon-badge {
+.goal-featured-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 54px;
-  height: 54px;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px; /* squircle, not a circle */
+  font-size: 28px;
+}
+
+.goal-featured-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.goal-featured-copy strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 4px;
+}
+
+.goal-featured-copy p {
+  margin: 0;
+  font-size: 13px;
+  color: #767676;
+  line-height: 1.5;
+}
+
+.goal-featured-cta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: #8a1c2f;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(138, 28, 47, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.goal-featured-cta:hover,
+.goal-featured-cta:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(138, 28, 47, 0.32);
+  outline: none;
+}
+
+[dir='rtl'] .goal-featured-cta span {
+  transform: scaleX(-1);
+  display: inline-block;
+}
+
+/* =========================================
+   SELECTOR STRIP — squircle chips, not circles, not squares.
+   Two accent colors alternate chip to chip (gold / maroon, the site's
+   own brand pair) instead of one repeated pastel tone.
+========================================= */
+
+.goal-carousel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.goal-carousel-nav {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 32%, #ffffff, #f6e8ea 65%, #e6c8ce 100%);
-  box-shadow: 0 8px 18px rgba(138, 28, 47, 0.14), inset 0 0 14px rgba(138, 28, 47, 0.05);
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.goal-card:hover .goal-card-icon-badge,
-.goal-card:focus-visible .goal-card-icon-badge {
-  transform: scale(1.08) rotate(-4deg);
-}
-
-.goal-card-icon {
-  font-size: 24px;
+  border: 1px solid #e6d9d0;
+  background: #fff;
+  color: #8a1c2f;
+  font-size: 18px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.goal-card-title {
-  font-size: 14.5px;
-  font-weight: 600;
-  color: #262626;
-  line-height: 1.4;
+.goal-carousel-nav:hover:not(:disabled) {
+  background: #fdf3f4;
+  transform: scale(1.06);
 }
 
-.goal-card-arrow {
-  position: absolute;
-  top: 24px;
-  inset-inline-end: 20px;
-  color: #c9a6ac;
-  font-size: 15px;
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.goal-carousel-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
-[dir='rtl'] .goal-card-arrow {
-  transform: translateX(4px) scaleX(-1);
+/* The prev/next click behavior already follows the visual arrow, so in
+   RTL the glyphs themselves just need to point the way the strip
+   actually scrolls — same fix already used for the old card arrow. */
+[dir='rtl'] .goal-carousel-nav {
+  transform: scaleX(-1);
 }
 
-.goal-card:hover .goal-card-arrow,
-.goal-card:focus-visible .goal-card-arrow {
+.goal-carousel-track {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 6px 2px 10px;
+  scrollbar-width: none;
+}
+
+.goal-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.goal-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 108px;
+  padding: 16px 10px 14px;
+  text-align: center;
+
+  background: #fff;
+  border: 1px solid rgba(236, 224, 214, 0.9);
+  border-radius: 20px; /* squircle */
+  opacity: 0.55;
+  transform: scale(0.94);
+
+  transition: opacity 0.25s ease, transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.goal-chip.active {
   opacity: 1;
-  transform: translateX(0);
+  transform: scale(1);
+  border-color: #8a1c2f;
+  box-shadow: 0 14px 30px rgba(138, 28, 47, 0.16);
 }
 
-[dir='rtl'] .goal-card:hover .goal-card-arrow,
-[dir='rtl'] .goal-card:focus-visible .goal-card-arrow {
-  transform: translateX(0) scaleX(-1);
+.goal-chip:hover,
+.goal-chip:focus-visible {
+  opacity: 1;
+  outline: none;
 }
 
-.goal-card-muted {
-  background: #faf7f4;
+.goal-chip-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px; /* squircle */
+  font-size: 19px;
+}
+
+.goal-chip-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #444;
+  line-height: 1.35;
+}
+
+.goal-chip-muted {
   border-style: dashed;
 }
 
-.goal-card-muted .goal-card-icon-badge {
+.goal-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.goal-dot-nav {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: none;
+  background: #e6d9d0;
+  padding: 0;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.goal-dot-nav.active {
+  background: #8a1c2f;
+  transform: scale(1.3);
+}
+
+/* Two accent colors, alternating chip to chip / badge to badge — gold
+   and maroon, the site's actual brand pair — instead of one repeated
+   pastel circle. Colors are saturated enough at the edge to read as
+   real color, not a pale wash, which also keeps contrast strong for
+   anyone using the high-contrast or larger-text accessibility settings. */
+.badge-gold {
+  background: radial-gradient(circle at 32% 32%, #fff6e4, #f0d9a0 60%, #c99a3f 100%);
+  box-shadow: 0 8px 18px rgba(201, 154, 63, 0.3), inset 0 0 14px rgba(138, 96, 21, 0.08);
+}
+
+.badge-maroon {
+  background: radial-gradient(circle at 32% 32%, #fbeaec, #d98a97 60%, #8a1c2f 100%);
+  box-shadow: 0 8px 18px rgba(138, 28, 47, 0.3), inset 0 0 14px rgba(85, 17, 30, 0.08);
+}
+
+.goal-chip-muted .goal-chip-badge {
   background: radial-gradient(circle at 32% 32%, #ffffff, #f4efec 65%, #e6ddd6 100%);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
 }
@@ -180,11 +288,6 @@
 @keyframes goal-fade-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes goal-card-in {
-  from { opacity: 0; transform: translateY(16px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* =========================================
@@ -334,35 +437,45 @@
    RESPONSIVE
 ========================================= */
 
-@media (max-width: 860px) {
-  .goal-hub-grid {
-    grid-template-columns: repeat(2, 1fr);
+@media (max-width: 640px) {
+  .goal-featured {
+    flex-wrap: wrap;
+  }
+
+  .goal-featured-cta {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .goal-chip {
+    width: 92px;
   }
 }
 
 @media (max-width: 540px) {
-  .goal-hub-grid {
-    grid-template-columns: 1fr;
-  }
-
   .goal-hub-inner {
     padding: 40px 6vw 36px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .goal-card,
   .goal-hub-eyebrow,
   .goal-hub-title,
   .goal-hub-subtitle,
+  .goal-featured,
   .goal-modal,
   .goal-modal-step,
-  .goal-modal-backdrop,
-  .goal-hub::before {
+  .goal-modal-backdrop {
     animation: none;
   }
 
-  .goal-card-icon-badge {
+  .goal-carousel-track {
+    scroll-behavior: auto;
+  }
+
+  .goal-chip,
+  .goal-carousel-nav,
+  .goal-featured-cta {
     transition: none;
   }
 }

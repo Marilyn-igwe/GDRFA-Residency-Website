@@ -1,10 +1,16 @@
-import { useState } from 'preact/hooks'
+import { useState, useRef, useEffect } from 'preact/hooks'
 import './goalhub.css'
 
 // The "front door" of the whole app. One question, six answers, done.
-// Replaces the old hero + quick-actions combo, which showed a title, a
-// paragraph, two buttons AND four tiles before the person had done
-// anything — all doing roughly the same job of "where do I click".
+//
+// v2: instead of six equal-weight boxes competing for attention at once,
+// this is a single featured panel (icon, title, full description, one
+// clear "Continue" button) driven by a horizontal selector strip below
+// it. Tapping or scrolling to a card in the strip makes it the featured
+// one; tapping it again (or the strip already showing it selected)
+// actually goes there. Arrow buttons and dot indicators exist so this
+// works without ever needing to swipe/drag — direct tap on any card
+// still works exactly like before, this is additive, not a trade-off.
 //
 // `t` is the translations object for the active language (t.goalHub).
 // `onNavigate(action)` is called with one of:
@@ -15,8 +21,13 @@ export function GoalHub({ t, onNavigate }) {
   const [notSureOpen, setNotSureOpen] = useState(false)
   const [step, setStep] = useState(1) // 1 = who, 2 = what
   const [who, setWho] = useState(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const trackRef = useRef(null)
+  const cardRefs = useRef([])
 
-  function handleCardClick(action) {
+  const activeCard = gh.cards[activeIndex]
+
+  function goToAction(action) {
     if (action === 'notsure') {
       setStep(1)
       setWho(null)
@@ -24,6 +35,21 @@ export function GoalHub({ t, onNavigate }) {
       return
     }
     onNavigate(action)
+  }
+
+  function selectCard(i) {
+    if (i === activeIndex) {
+      goToAction(gh.cards[i].action)
+      return
+    }
+    setActiveIndex(i)
+    cardRefs.current[i]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }
+
+  function step_(delta) {
+    const next = Math.max(0, Math.min(gh.cards.length - 1, activeIndex + delta))
+    setActiveIndex(next)
+    cardRefs.current[next]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
   }
 
   function pickWho(value) {
@@ -55,21 +81,72 @@ export function GoalHub({ t, onNavigate }) {
         <h1 class="goal-hub-title">{gh.title}</h1>
         <p class="goal-hub-subtitle">{gh.subtitle}</p>
 
-        <div class="goal-hub-grid">
+        {/* Featured panel — reflects whichever card is currently active */}
+        <div class="goal-featured" key={activeCard.action}>
+          <span class={`goal-featured-badge ${activeIndex % 2 === 0 ? 'badge-gold' : 'badge-maroon'}`}>
+            <span aria-hidden="true">{activeCard.icon}</span>
+          </span>
+          <div class="goal-featured-copy">
+            <strong>{activeCard.title}</strong>
+            <p>{activeCard.description}</p>
+          </div>
+          <button type="button" class="goal-featured-cta" onClick={() => goToAction(activeCard.action)}>
+            {gh.continueLabel || 'Continue'}
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        {/* Selector strip */}
+        <div class="goal-carousel">
+          <button
+            type="button"
+            class="goal-carousel-nav prev"
+            onClick={() => step_(-1)}
+            disabled={activeIndex === 0}
+            aria-label={gh.previous || 'Previous'}
+          >
+            ‹
+          </button>
+
+          <div class="goal-carousel-track" ref={trackRef} role="listbox" aria-label={gh.title}>
+            {gh.cards.map((card, i) => (
+              <button
+                type="button"
+                key={card.action}
+                ref={(el) => (cardRefs.current[i] = el)}
+                role="option"
+                aria-selected={i === activeIndex}
+                class={`goal-chip ${i === activeIndex ? 'active' : ''} ${card.action === 'notsure' ? 'goal-chip-muted' : ''}`}
+                onClick={() => selectCard(i)}
+              >
+                <span class={`goal-chip-badge ${i % 2 === 0 ? 'badge-gold' : 'badge-maroon'}`}>
+                  <span aria-hidden="true">{card.icon}</span>
+                </span>
+                <span class="goal-chip-title">{card.title}</span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            class="goal-carousel-nav next"
+            onClick={() => step_(1)}
+            disabled={activeIndex === gh.cards.length - 1}
+            aria-label={gh.next || 'Next'}
+          >
+            ›
+          </button>
+        </div>
+
+        <div class="goal-dots">
           {gh.cards.map((card, i) => (
             <button
               type="button"
-              class={`goal-card ${card.action === 'notsure' ? 'goal-card-muted' : ''}`}
               key={card.action}
-              style={{ animationDelay: `${i * 60}ms` }}
-              onClick={() => handleCardClick(card.action)}
-            >
-              <span class="goal-card-icon-badge">
-                <span class="goal-card-icon" aria-hidden="true">{card.icon}</span>
-              </span>
-              <span class="goal-card-title">{card.title}</span>
-              <span class="goal-card-arrow" aria-hidden="true">→</span>
-            </button>
+              class={`goal-dot-nav ${i === activeIndex ? 'active' : ''}`}
+              aria-label={card.title}
+              onClick={() => selectCard(i)}
+            />
           ))}
         </div>
       </div>
