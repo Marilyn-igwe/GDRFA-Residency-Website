@@ -31,13 +31,18 @@ const LANGUAGE_SETTINGS = {
     pitch: 1,
     volume: 1
   },
+  fil: {
+    rate: 0.94,
+    pitch: 1,
+    volume: 1
+  },
   ur: {
     rate: 0.88,
     pitch: 1,
     volume: 1
   },
-  fil: {
-    rate: 0.94,
+  bn: {
+    rate: 0.9,
     pitch: 1,
     volume: 1
   }
@@ -70,7 +75,9 @@ const LOW_QUALITY_VOICE_WORDS = [
 ]
 
 function normalizeLanguage(language) {
-  return String(language || 'en-US')
+  return String(
+    language || 'en-US'
+  )
     .replace('_', '-')
     .toLowerCase()
 }
@@ -81,11 +88,10 @@ function baseLanguage(language) {
 }
 
 function getLanguageSettings(language) {
-  const base =
-    baseLanguage(language)
-
   return (
-    LANGUAGE_SETTINGS[base] ||
+    LANGUAGE_SETTINGS[
+      baseLanguage(language)
+    ] ||
     LANGUAGE_SETTINGS.en
   )
 }
@@ -97,19 +103,15 @@ function voiceStorageKey(language) {
   )
 }
 
-function voiceQualityScore(
+function scoreVoice(
   voice,
-  requestedLanguage
+  language
 ) {
   const requested =
-    normalizeLanguage(
-      requestedLanguage
-    )
+    normalizeLanguage(language)
 
   const requestedBase =
-    baseLanguage(
-      requestedLanguage
-    )
+    baseLanguage(language)
 
   const voiceLanguage =
     normalizeLanguage(
@@ -121,60 +123,45 @@ function voiceQualityScore(
       voice.lang
     )
 
-  const voiceName =
+  const name =
     String(voice.name || '')
       .toLowerCase()
 
-  let score = 0
-
   if (
-    voiceLanguage === requested
+    voiceBase !==
+    requestedBase
   ) {
-    score += 100
-  } else if (
-    voiceBase === requestedBase
-  ) {
-    score += 70
-  } else {
     return -1000
   }
 
+  let score =
+    voiceLanguage === requested
+      ? 100
+      : 70
+
   for (
-    const keyword
+    const word
     of HIGH_QUALITY_VOICE_WORDS
   ) {
-    if (
-      voiceName.includes(keyword)
-    ) {
+    if (name.includes(word)) {
       score += 12
     }
   }
 
   for (
-    const keyword
+    const word
     of LOW_QUALITY_VOICE_WORDS
   ) {
-    if (
-      voiceName.includes(keyword)
-    ) {
+    if (name.includes(word)) {
       score -= 30
     }
   }
 
-  if (
-    voice.default
-  ) {
+  if (voice.default) {
     score += 3
   }
 
-  /*
-   * Online voices are often more natural.
-   * Local voices remain valid fallbacks
-   * when an online voice is unavailable.
-   */
-  if (
-    !voice.localService
-  ) {
+  if (!voice.localService) {
     score += 5
   }
 
@@ -195,11 +182,11 @@ function sortVoices(
     )
     .sort(
       (left, right) =>
-        voiceQualityScore(
+        scoreVoice(
           right,
           language
         ) -
-        voiceQualityScore(
+        scoreVoice(
           left,
           language
         )
@@ -209,22 +196,24 @@ function sortVoices(
 function chooseBestVoice(
   voices,
   language,
-  preferredVoiceName
+  preferredName
 ) {
   if (!voices.length) {
     return null
   }
 
-  if (preferredVoiceName) {
+  if (preferredName) {
     const preferred =
       voices.find(
         (voice) =>
           voice.name ===
-          preferredVoiceName &&
+            preferredName &&
           baseLanguage(
             voice.lang
           ) ===
-          baseLanguage(language)
+            baseLanguage(
+              language
+            )
       )
 
     if (preferred) {
@@ -266,75 +255,40 @@ function cleanSpeechText(text) {
     .trim()
 }
 
-function splitLongSection(
-  section,
+function splitLongText(
+  text,
   maximumLength
 ) {
   if (
-    section.length <=
+    text.length <=
     maximumLength
   ) {
-    return [section]
+    return [text]
   }
 
-  const parts =
-    section.split(
-      /(?<=[,;:])\s+/
-    )
+  const words =
+    text.split(/\s+/)
 
   const chunks = []
   let current = ''
 
-  for (const part of parts) {
+  for (const word of words) {
     const candidate =
       current
-        ? `${current} ${part}`
-        : part
+        ? `${current} ${word}`
+        : word
 
     if (
       candidate.length <=
       maximumLength
     ) {
       current = candidate
-      continue
-    }
-
-    if (current) {
-      chunks.push(current)
-    }
-
-    if (
-      part.length <=
-      maximumLength
-    ) {
-      current = part
-      continue
-    }
-
-    const words =
-      part.split(/\s+/)
-
-    current = ''
-
-    for (const word of words) {
-      const wordCandidate =
-        current
-          ? `${current} ${word}`
-          : word
-
-      if (
-        wordCandidate.length <=
-        maximumLength
-      ) {
-        current =
-          wordCandidate
-      } else {
-        if (current) {
-          chunks.push(current)
-        }
-
-        current = word
+    } else {
+      if (current) {
+        chunks.push(current)
       }
+
+      current = word
     }
   }
 
@@ -373,19 +327,19 @@ function createSpeechChunks(text) {
     }
 
     const sentenceParts =
-      splitLongSection(
+      splitLongText(
         sentence,
         220
       )
 
     for (
-      const sentencePart
+      const part
       of sentenceParts
     ) {
       const candidate =
         current
-          ? `${current} ${sentencePart}`
-          : sentencePart
+          ? `${current} ${part}`
+          : part
 
       if (
         candidate.length <= 260
@@ -396,7 +350,7 @@ function createSpeechChunks(text) {
           chunks.push(current)
         }
 
-        current = sentencePart
+        current = part
       }
     }
   }
@@ -410,7 +364,8 @@ function createSpeechChunks(text) {
 
 function loadBrowserVoices() {
   if (
-    typeof window === 'undefined' ||
+    typeof window ===
+      'undefined' ||
     !window.speechSynthesis
   ) {
     return []
@@ -435,6 +390,11 @@ export function useSpeechRecognition({
     setInterimText
   ] = useState('')
 
+  const [
+    error,
+    setError
+  ] = useState('')
+
   const recognitionRef =
     useRef(null)
 
@@ -452,6 +412,28 @@ export function useSpeechRecognition({
 
   const submittedRef =
     useRef(false)
+
+  const autoSubmitRef =
+    useRef(false)
+
+  const silenceMsRef =
+    useRef(1400)
+
+  const silenceTimerRef =
+    useRef(null)
+
+  function clearSilenceTimer() {
+    if (
+      silenceTimerRef.current
+    ) {
+      window.clearTimeout(
+        silenceTimerRef.current
+      )
+
+      silenceTimerRef.current =
+        null
+    }
+  }
 
   useEffect(() => {
     if (!Recognition) {
@@ -473,9 +455,13 @@ export function useSpeechRecognition({
         return
       }
 
+      clearSilenceTimer()
+
       const transcript =
-        finalRef.current.trim() ||
-        interimRef.current.trim()
+        (
+          finalRef.current.trim() ||
+          interimRef.current.trim()
+        ).trim()
 
       submittedRef.current = true
       finalRef.current = ''
@@ -490,6 +476,42 @@ export function useSpeechRecognition({
           transcript
         )
       }
+    }
+
+    function scheduleAutoSubmit() {
+      clearSilenceTimer()
+
+      if (
+        !autoSubmitRef.current
+      ) {
+        return
+      }
+
+      const hasTranscript =
+        finalRef.current.trim() ||
+        interimRef.current.trim()
+
+      if (!hasTranscript) {
+        return
+      }
+
+      silenceTimerRef.current =
+        window.setTimeout(() => {
+          if (
+            submittedRef.current
+          ) {
+            return
+          }
+
+          manualStopRef.current =
+            true
+
+          try {
+            recognition.stop()
+          } catch {
+            submitOnce()
+          }
+        }, silenceMsRef.current)
     }
 
     recognition.onresult = (
@@ -526,6 +548,8 @@ export function useSpeechRecognition({
         `${finalRef.current} ${interim}`
           .trim()
       )
+
+      scheduleAutoSubmit()
     }
 
     recognition.onend = () => {
@@ -537,6 +561,12 @@ export function useSpeechRecognition({
         return
       }
 
+      /*
+       * Browsers may stop recognition
+       * after a silence timeout. Restart
+       * it while the user is still in
+       * dictation or conversation mode.
+       */
       try {
         recognition.start()
       } catch {
@@ -548,9 +578,15 @@ export function useSpeechRecognition({
       event
     ) => {
       if (
-        event.error === 'aborted'
+        event.error ===
+        'aborted'
       ) {
-        submitOnce()
+        if (
+          manualStopRef.current
+        ) {
+          submitOnce()
+        }
+
         return
       }
 
@@ -566,6 +602,8 @@ export function useSpeechRecognition({
         return
       }
 
+      clearSilenceTimer()
+
       submittedRef.current = true
       finalRef.current = ''
       interimRef.current = ''
@@ -573,17 +611,15 @@ export function useSpeechRecognition({
 
       setListening(false)
       setInterimText('')
-
-      console.warn(
-        'Speech recognition error:',
-        event.error
-      )
+      setError(event.error || 'speech-error')
     }
 
     recognitionRef.current =
       recognition
 
     return () => {
+      clearSilenceTimer()
+
       submittedRef.current = true
 
       recognition.onresult = null
@@ -602,7 +638,13 @@ export function useSpeechRecognition({
   }, [lang])
 
   const start = useCallback(
-    (onFinal) => {
+    (
+      onFinal,
+      {
+        autoSubmit = false,
+        silenceMs = 1400
+      } = {}
+    ) => {
       const recognition =
         recognitionRef.current
 
@@ -610,8 +652,20 @@ export function useSpeechRecognition({
         return
       }
 
+      clearSilenceTimer()
+
       callbackRef.current =
         onFinal
+
+      autoSubmitRef.current =
+        autoSubmit
+
+      silenceMsRef.current =
+        Math.max(
+          700,
+          Number(silenceMs) ||
+            1400
+        )
 
       finalRef.current = ''
       interimRef.current = ''
@@ -620,19 +674,20 @@ export function useSpeechRecognition({
       submittedRef.current =
         false
 
+      setError('')
       setInterimText('')
 
       try {
         recognition.start()
         setListening(true)
-      } catch (error) {
+      } catch (startError) {
         if (
-          error?.name !==
+          startError?.name !==
           'InvalidStateError'
         ) {
-          console.warn(
-            'Could not start microphone:',
-            error
+          setError(
+            startError?.message ||
+            'microphone-error'
           )
         }
       }
@@ -652,6 +707,8 @@ export function useSpeechRecognition({
         return
       }
 
+      clearSilenceTimer()
+
       manualStopRef.current =
         true
 
@@ -669,6 +726,8 @@ export function useSpeechRecognition({
 
   const cancel = useCallback(
     () => {
+      clearSilenceTimer()
+
       manualStopRef.current =
         true
 
@@ -697,6 +756,7 @@ export function useSpeechRecognition({
 
     listening,
     interimText,
+    error,
     start,
     stop,
     cancel
@@ -722,8 +782,10 @@ export function useSpeechSynthesis({
   ] = useState({})
 
   const supported =
-    typeof window !== 'undefined' &&
-    'speechSynthesis' in window &&
+    typeof window !==
+      'undefined' &&
+    'speechSynthesis' in
+      window &&
     'SpeechSynthesisUtterance' in
       window
 
@@ -776,7 +838,8 @@ export function useSpeechSynthesis({
 
   useEffect(() => {
     if (
-      typeof window === 'undefined'
+      typeof window ===
+        'undefined'
     ) {
       return
     }
@@ -786,19 +849,20 @@ export function useSpeechSynthesis({
         defaultLanguage
       )
 
-    const storedName =
+    const storedVoice =
       localStorage.getItem(
         voiceStorageKey(
           defaultLanguage
         )
       )
 
-    if (storedName) {
+    if (storedVoice) {
       setSelectedVoiceNames(
         (current) => ({
           ...current,
+
           [languageBase]:
-            storedName
+            storedVoice
         })
       )
     }
@@ -830,6 +894,7 @@ export function useSpeechSynthesis({
         setSelectedVoiceNames(
           (current) => ({
             ...current,
+
             [languageBase]:
               voiceName
           })
@@ -837,7 +902,7 @@ export function useSpeechSynthesis({
 
         if (
           typeof window !==
-          'undefined'
+            'undefined'
         ) {
           localStorage.setItem(
             voiceStorageKey(
@@ -920,7 +985,7 @@ export function useSpeechSynthesis({
         const languageBase =
           baseLanguage(lang)
 
-        const storedVoiceName =
+        const preferredVoice =
           voiceName ||
           selectedVoiceNames[
             languageBase
@@ -942,7 +1007,7 @@ export function useSpeechSynthesis({
               ? voices
               : loadBrowserVoices(),
             lang,
-            storedVoiceName
+            preferredVoice
           )
 
         let index = 0
@@ -1026,11 +1091,6 @@ export function useSpeechSynthesis({
                 return
               }
 
-              /*
-               * A short pause sounds more
-               * natural than immediately
-               * starting the next chunk.
-               */
               timerRef.current =
                 window.setTimeout(
                   playNext,
@@ -1039,7 +1099,7 @@ export function useSpeechSynthesis({
             }
 
           utterance.onerror =
-            (event) => {
+            (speechError) => {
               if (
                 session !==
                 sessionRef.current
@@ -1048,7 +1108,7 @@ export function useSpeechSynthesis({
               }
 
               if (
-                event.error ===
+                speechError.error ===
                 'canceled'
               ) {
                 return
@@ -1144,77 +1204,84 @@ export function useMicLevel(
           autoGainControl: true
         }
       })
-      .then((mediaStream) => {
-        if (stopped) {
-          mediaStream
-            .getTracks()
-            .forEach(
-              (track) =>
-                track.stop()
-            )
+      .then(
+        (mediaStream) => {
+          if (stopped) {
+            mediaStream
+              .getTracks()
+              .forEach(
+                (track) =>
+                  track.stop()
+              )
 
-          return
-        }
+            return
+          }
 
-        stream = mediaStream
+          stream = mediaStream
 
-        const AudioContext =
-          window.AudioContext ||
-          window.webkitAudioContext
+          const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext
 
-        audioContext =
-          new AudioContext()
+          audioContext =
+            new AudioContext()
 
-        const source =
-          audioContext
-            .createMediaStreamSource(
-              stream
-            )
+          const source =
+            audioContext
+              .createMediaStreamSource(
+                stream
+              )
 
-        const analyser =
-          audioContext
-            .createAnalyser()
+          const analyser =
+            audioContext
+              .createAnalyser()
 
-        analyser.fftSize = 256
-        analyser.smoothingTimeConstant =
-          0.75
+          analyser.fftSize = 256
 
-        source.connect(analyser)
-
-        const data =
-          new Uint8Array(
-            analyser
-              .frequencyBinCount
-          )
-
-        function updateLevel() {
           analyser
-            .getByteFrequencyData(
-              data
+            .smoothingTimeConstant =
+            0.75
+
+          source.connect(analyser)
+
+          const data =
+            new Uint8Array(
+              analyser
+                .frequencyBinCount
             )
 
-          const average =
-            data.reduce(
-              (sum, value) =>
-                sum + value,
-              0
-            ) / data.length
+          function updateLevel() {
+            analyser
+              .getByteFrequencyData(
+                data
+              )
 
-          setLevel(
-            Math.min(
-              average / 100,
-              1
-            )
-          )
+            const average =
+              data.reduce(
+                (
+                  total,
+                  value
+                ) =>
+                  total + value,
+                0
+              ) / data.length
 
-          frameRef.current =
-            requestAnimationFrame(
-              updateLevel
+            setLevel(
+              Math.min(
+                average / 100,
+                1
+              )
             )
+
+            frameRef.current =
+              requestAnimationFrame(
+                updateLevel
+              )
+          }
+
+          updateLevel()
         }
-
-        updateLevel()
-      })
+      )
       .catch(() => {
         setLevel(0)
       })

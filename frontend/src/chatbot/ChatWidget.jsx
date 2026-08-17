@@ -1,9 +1,17 @@
-import { useEffect, useRef, useState } from 'preact/hooks'
-import { askChatbot } from './api'
-import { useLanguage } from '../language/LanguageContext'
+import {
+  useEffect,
+  useRef,
+  useState
+} from 'preact/hooks'
+import {
+  askChatbot
+} from './api'
+import {
+  useLanguage
+} from '../language/LanguageContext'
 import {
   useSpeechRecognition,
-  useSpeechSynthesis,
+  useSpeechSynthesis
 } from '../assistant/useSpeech'
 import './chatbot.css'
 
@@ -13,81 +21,215 @@ const SPEECH_LANGUAGES = {
   hi: 'hi-IN',
   tl: 'fil-PH',
   ur: 'ur-PK',
-  bn: 'bn-BD',
+  bn: 'bn-BD'
 }
+
+const CHAT_STORAGE_KEY =
+  'gdrfa_chat_conversation'
 
 function Icon({ type }) {
   if (type === 'close') {
     return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M6 6l12 12M18 6L6 18"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
       </svg>
     )
   }
 
   if (type === 'mic') {
     return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="2" />
-        <path d="M5 11a7 7 0 0014 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <rect
+          x="9"
+          y="3"
+          width="6"
+          height="11"
+          rx="3"
+          stroke="currentColor"
+          stroke-width="2"
+        />
+
+        <path
+          d="M5 11a7 7 0 0014 0M12 18v3"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
       </svg>
     )
   }
 
   if (type === 'send') {
     return (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M4 12h16M13 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <svg
+        width="17"
+        height="17"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M4 12h16M13 5l7 7-7 7"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
       </svg>
     )
   }
 
   if (type === 'volume-off') {
     return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M4 9v6h4l5 4V5L8 9H4zM17 9l5 6M22 9l-5 6" stroke="currentColor" stroke-width="2" />
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M4 9v6h4l5 4V5L8 9H4zM17 9l5 6M22 9l-5 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
       </svg>
     )
   }
 
   if (type === 'volume') {
     return (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M4 9v6h4l5 4V5L8 9H4zM17 8a5 5 0 010 8" stroke="currentColor" stroke-width="2" />
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M4 9v6h4l5 4V5L8 9H4zM17 8a5 5 0 010 8"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
       </svg>
     )
   }
 
   if (type === 'new') {
     return (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M12 5v14M5 12h14"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
       </svg>
     )
   }
 
   if (type === 'end') {
     return (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path d="M4 4l16 16M5 12a7 7 0 0011.7 5.2M19 12A7 7 0 007.3 6.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M4 4l16 16M5 12a7 7 0 0011.7 5.2M19 12A7 7 0 007.3 6.8"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    )
+  }
+
+  if (type === 'voice') {
+    return (
+      <svg
+        width="17"
+        height="17"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M6 10v4M10 7v10M14 4v16M18 8v8"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
       </svg>
     )
   }
 
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M4 4h16v12H7l-3 3V4z" stroke="currentColor" stroke-width="2" />
-      <circle cx="9" cy="10" r="1" fill="currentColor" />
-      <circle cx="12" cy="10" r="1" fill="currentColor" />
-      <circle cx="15" cy="10" r="1" fill="currentColor" />
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+    >
+      <path
+        d="M4 4h16v12H7l-3 3V4z"
+        stroke="currentColor"
+        stroke-width="2"
+      />
+
+      <circle
+        cx="9"
+        cy="10"
+        r="1"
+        fill="currentColor"
+      />
+
+      <circle
+        cx="12"
+        cy="10"
+        r="1"
+        fill="currentColor"
+      />
+
+      <circle
+        cx="15"
+        cy="10"
+        r="1"
+        fill="currentColor"
+      />
     </svg>
   )
 }
 
-function prepareForSpeech(text, locale) {
+function prepareForSpeech(
+  text,
+  locale
+) {
   return String(text).replace(
     /\b([01]?\d|2[0-3]):([0-5]\d)\b/g,
-    (_, hour, minute) => {
+    (
+      _,
+      hour,
+      minute
+    ) => {
       const time = new Date(
         2000,
         0,
@@ -96,51 +238,215 @@ function prepareForSpeech(text, locale) {
         Number(minute)
       )
 
-      return new Intl.DateTimeFormat(locale, {
-        hour: 'numeric',
-        minute: minute === '00' ? undefined : '2-digit',
-        hour12: true,
-      }).format(time)
+      return new Intl.DateTimeFormat(
+        locale,
+        {
+          hour: 'numeric',
+
+          minute:
+            minute === '00'
+              ? undefined
+              : '2-digit',
+
+          hour12: true
+        }
+      ).format(time)
     }
   )
 }
 
+function loadSavedMessages() {
+  if (
+    typeof window ===
+    'undefined'
+  ) {
+    return null
+  }
+
+  try {
+    const saved =
+      sessionStorage.getItem(
+        CHAT_STORAGE_KEY
+      )
+
+    if (!saved) {
+      return null
+    }
+
+    const parsed =
+      JSON.parse(saved)
+
+    if (!Array.isArray(parsed)) {
+      return null
+    }
+
+    return parsed.filter(
+      (message) =>
+        message &&
+        (
+          message.role === 'user' ||
+          message.role === 'bot'
+        ) &&
+        typeof message.text ===
+          'string'
+    )
+  } catch {
+    return null
+  }
+}
+
 export function ChatWidget() {
-  const { chat: ct, code } = useLanguage()
+  const {
+    chat: ct,
+    code
+  } = useLanguage()
+
   const speechLang =
-    SPEECH_LANGUAGES[code] || 'en-US'
+    SPEECH_LANGUAGES[code] ||
+    'en-US'
 
   const recognition =
-    useSpeechRecognition({ lang: speechLang })
+    useSpeechRecognition({
+      lang: speechLang
+    })
 
-  const tts = useSpeechSynthesis()
+  const tts =
+    useSpeechSynthesis({
+      defaultLanguage:
+        speechLang
+    })
 
   function welcomeMessage() {
     return {
       role: 'bot',
       text: ct.welcomeText,
-      followups: ct.welcomeFollowups,
+      followups:
+        ct.welcomeFollowups
     }
   }
 
-  const [open, setOpen] = useState(false)
-  const [everOpened, setEverOpened] = useState(false)
-  const [messages, setMessages] =
-    useState([welcomeMessage()])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [voiceReplies, setVoiceReplies] = useState(true)
-  const [chatEnded, setChatEnded] = useState(false)
+  const [
+    open,
+    setOpen
+  ] = useState(false)
 
-  const scrollRef = useRef(null)
-  const inputRef = useRef(null)
+  const [
+    everOpened,
+    setEverOpened
+  ] = useState(false)
 
-useEffect(() => {
-  if (inputRef.current) {
-    inputRef.current.style.height = 'auto'
-    inputRef.current.style.height = `${inputRef.current.scrollHeight}px`
-  }
-}, [input]) 
+  const [
+    messages,
+    setMessages
+  ] = useState(
+    () =>
+      loadSavedMessages() || [
+        welcomeMessage()
+      ]
+  )
+
+  const [
+    input,
+    setInput
+  ] = useState('')
+
+  const [
+    loading,
+    setLoading
+  ] = useState(false)
+
+  const [
+    voiceReplies,
+    setVoiceReplies
+  ] = useState(true)
+
+  const [
+    chatEnded,
+    setChatEnded
+  ] = useState(false)
+
+  const [
+    voiceConversation,
+    setVoiceConversation
+  ] = useState(false)
+
+  const scrollRef =
+    useRef(null)
+
+  const inputRef =
+    useRef(null)
+
+  const messagesRef =
+    useRef(messages)
+
+  const loadingRef =
+    useRef(false)
+
+  const chatEndedRef =
+    useRef(false)
+
+  const openRef =
+    useRef(false)
+
+  const voiceRepliesRef =
+    useRef(true)
+
+  const voiceConversationRef =
+    useRef(false)
+
+  useEffect(() => {
+    messagesRef.current =
+      messages
+
+    try {
+      sessionStorage.setItem(
+        CHAT_STORAGE_KEY,
+        JSON.stringify(messages)
+      )
+    } catch {
+      // Storage may be unavailable.
+    }
+  }, [messages])
+
+  useEffect(() => {
+    loadingRef.current =
+      loading
+  }, [loading])
+
+  useEffect(() => {
+    chatEndedRef.current =
+      chatEnded
+  }, [chatEnded])
+
+  useEffect(() => {
+    openRef.current = open
+  }, [open])
+
+  useEffect(() => {
+    voiceRepliesRef.current =
+      voiceReplies
+  }, [voiceReplies])
+
+  useEffect(() => {
+    voiceConversationRef.current =
+      voiceConversation
+  }, [voiceConversation])
+
+  useEffect(() => {
+    if (!inputRef.current) {
+      return
+    }
+
+    inputRef.current.style.height =
+      'auto'
+
+    inputRef.current.style.height =
+      `${Math.min(
+        inputRef.current
+          .scrollHeight,
+        104
+      )}px`
+  }, [input])
 
   useEffect(() => {
     function openChat() {
@@ -148,164 +454,476 @@ useEffect(() => {
       setEverOpened(true)
     }
 
-    window.addEventListener('gdrfa:open-chat', openChat)
+    window.addEventListener(
+      'gdrfa:open-chat',
+      openChat
+    )
 
-    return () =>
+    return () => {
       window.removeEventListener(
         'gdrfa:open-chat',
         openChat
       )
+    }
   }, [])
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop =
-        scrollRef.current.scrollHeight
+    if (!scrollRef.current) {
+      return
     }
-  }, [messages, open])
+
+    scrollRef.current.scrollTop =
+      scrollRef.current
+        .scrollHeight
+  }, [
+    messages,
+    open,
+    loading,
+    recognition.interimText
+  ])
+
+  useEffect(() => {
+    if (
+      !recognition.listening ||
+      voiceConversation
+    ) {
+      return
+    }
+
+    setInput(
+      recognition.interimText
+    )
+  }, [
+    recognition.interimText,
+    recognition.listening,
+    voiceConversation
+  ])
 
   useEffect(() => {
     if (!open) {
+      voiceConversationRef.current =
+        false
+
+      setVoiceConversation(false)
       recognition.cancel()
       tts.cancel()
     }
   }, [open])
-
-  useEffect(() => {
-    // Mirror the running transcript into the input box live, so
-    // the user sees (and can fix) the text as they speak, instead
-    // of only after tapping "Finish speaking".
-    if (recognition.listening) {
-      setInput(recognition.interimText)
-    }
-  }, [recognition.interimText, recognition.listening])
 
   function stopAllAudio() {
     recognition.cancel()
     tts.cancel()
   }
 
+  function stopVoiceConversation({
+    stopSpeech = true
+  } = {}) {
+    voiceConversationRef.current =
+      false
+
+    setVoiceConversation(false)
+    recognition.cancel()
+
+    if (stopSpeech) {
+      tts.cancel()
+    }
+  }
+
   function startNewChat() {
-    stopAllAudio()
-    setMessages([welcomeMessage()])
+    stopVoiceConversation()
+
+    const nextMessages = [
+      welcomeMessage()
+    ]
+
+    messagesRef.current =
+      nextMessages
+
+    setMessages(nextMessages)
     setInput('')
     setLoading(false)
     setChatEnded(false)
+
+    loadingRef.current = false
+    chatEndedRef.current =
+      false
+
+    try {
+      sessionStorage.removeItem(
+        CHAT_STORAGE_KEY
+      )
+    } catch {
+      // Storage may be unavailable.
+    }
   }
 
   function endChat() {
-    stopAllAudio()
+    stopVoiceConversation()
+
     setInput('')
     setChatEnded(true)
+
+    chatEndedRef.current =
+      true
   }
 
-  async function sendMessage(text) {
-    const question = String(text || '').trim()
+  function resumeChat() {
+    setChatEnded(false)
 
-    if (!question || loading || chatEnded) return
+    chatEndedRef.current =
+      false
+  }
 
-    const history = messages.slice(-8).map((message) => ({
-      role:
-        message.role === 'bot' ? 'assistant' : 'user',
-      content: message.text,
-    }))
+  function scheduleVoiceListening() {
+    window.setTimeout(() => {
+      if (
+        !voiceConversationRef
+          .current ||
+        !openRef.current ||
+        chatEndedRef.current ||
+        loadingRef.current ||
+        tts.speaking
+      ) {
+        return
+      }
 
-    setMessages((current) => [
-      ...current,
-      { role: 'user', text: question },
-    ])
+      recognition.start(
+        (transcript) => {
+          const spokenText =
+            String(
+              transcript || ''
+            ).trim()
+
+          if (
+            !spokenText ||
+            !voiceConversationRef
+              .current
+          ) {
+            return
+          }
+
+          sendMessage(
+            spokenText,
+            {
+              fromVoiceConversation:
+                true
+            }
+          )
+        },
+        {
+          autoSubmit: true,
+          silenceMs: 1400
+        }
+      )
+    }, 180)
+  }
+
+  function startVoiceConversation() {
+    if (
+      !recognition.supported ||
+      loadingRef.current ||
+      chatEndedRef.current
+    ) {
+      return
+    }
+
+    tts.cancel()
+    recognition.cancel()
+
+    setOpen(true)
+    setEverOpened(true)
+    setVoiceReplies(true)
+    setVoiceConversation(true)
+
+    openRef.current = true
+    voiceRepliesRef.current =
+      true
+    voiceConversationRef.current =
+      true
+
+    scheduleVoiceListening()
+  }
+
+  async function sendMessage(
+    text,
+    {
+      fromVoiceConversation =
+        false
+    } = {}
+  ) {
+    const question =
+      String(text || '').trim()
+
+    if (
+      !question ||
+      loadingRef.current ||
+      chatEndedRef.current
+    ) {
+      return
+    }
+
+    recognition.cancel()
+
+    const currentMessages =
+      messagesRef.current
+
+    const history =
+      currentMessages
+        .slice(-10)
+        .map((message) => ({
+          role:
+            message.role ===
+              'bot'
+              ? 'assistant'
+              : 'user',
+
+          content:
+            message.text
+        }))
+
+    const userMessage = {
+      role: 'user',
+      text: question
+    }
+
+    const messagesWithUser = [
+      ...currentMessages,
+      userMessage
+    ]
+
+    messagesRef.current =
+      messagesWithUser
+
+    setMessages(
+      messagesWithUser
+    )
 
     setInput('')
     setLoading(true)
 
+    loadingRef.current = true
+
     try {
-      const result = await askChatbot(question, {
-        history,
-        language: code,
-      })
-
-      setMessages((current) => [
-        ...current,
-        {
-          role: 'bot',
-          text: result.reply,
-          followups: result.followups || [],
-          source: result.source,
-        },
-      ])
-
-      if (voiceReplies) {
-        tts.speak(
-          prepareForSpeech(result.reply, speechLang),
-          { lang: speechLang }
+      const result =
+        await askChatbot(
+          question,
+          {
+            history,
+            language: code
+          }
         )
-      }
-    } catch (error) {
-      console.error(error)
 
-      setMessages((current) => [
-        ...current,
-        {
-          role: 'bot',
-          text: ct.errorText,
-          followups: [],
-        },
-      ])
+      const botMessage = {
+        role: 'bot',
+
+        text:
+          result.reply ||
+          ct.errorText,
+
+        followups:
+          result.followups || []
+      }
+
+      const messagesWithReply = [
+        ...messagesRef.current,
+        botMessage
+      ]
+
+      messagesRef.current =
+        messagesWithReply
+
+      setMessages(
+        messagesWithReply
+      )
+
+      setLoading(false)
+      loadingRef.current = false
+
+      const shouldSpeak =
+        voiceConversationRef
+          .current ||
+        voiceRepliesRef.current
+
+      if (
+        shouldSpeak &&
+        tts.supported
+      ) {
+        tts.speak(
+          prepareForSpeech(
+            botMessage.text,
+            speechLang
+          ),
+          {
+            lang: speechLang,
+
+            onEnd: () => {
+              if (
+                voiceConversationRef
+                  .current
+              ) {
+                scheduleVoiceListening()
+              }
+            }
+          }
+        )
+      } else if (
+        voiceConversationRef
+          .current
+      ) {
+        scheduleVoiceListening()
+      }
+    } catch (requestError) {
+      console.error(
+        requestError
+      )
+
+      const errorMessage = {
+        role: 'bot',
+        text: ct.errorText,
+        followups: []
+      }
+
+      const messagesWithError = [
+        ...messagesRef.current,
+        errorMessage
+      ]
+
+      messagesRef.current =
+        messagesWithError
+
+      setMessages(
+        messagesWithError
+      )
+
+      setLoading(false)
+      loadingRef.current = false
+
+      if (
+        fromVoiceConversation &&
+        voiceConversationRef
+          .current
+      ) {
+        scheduleVoiceListening()
+      }
     } finally {
       setLoading(false)
+      loadingRef.current = false
     }
   }
 
-  function toggleMic() {
-    if (chatEnded || loading) return
+  function toggleDictation() {
+    if (
+      chatEnded ||
+      loading ||
+      voiceConversation
+    ) {
+      return
+    }
 
     if (recognition.listening) {
-      // Finalize whatever was captured so far. This does NOT
-      // send the message — it just stops listening and hands
-      // the transcript back via the start() callback below, so
-      // the user can review/edit it in the input box first.
       recognition.stop()
       return
     }
 
-    // Prevent the microphone hearing the assistant.
     tts.cancel()
 
-    recognition.start((transcript) => {
-      if (transcript.trim()) {
-        // Drop the transcript into the input box instead of
-        // sending it straight away, so the user can review or
-        // edit what was heard before submitting it themselves.
-        setInput(transcript)
+    recognition.start(
+      (transcript) => {
+        const value =
+          String(
+            transcript || ''
+          ).trim()
+
+        if (value) {
+          setInput(value)
+
+          window.setTimeout(
+            () => {
+              inputRef.current
+                ?.focus()
+            },
+            0
+          )
+        }
+      },
+      {
+        autoSubmit: false
       }
-    })
+    )
+  }
+
+  function toggleVoiceReplies() {
+    const nextValue =
+      !voiceReplies
+
+    setVoiceReplies(
+      nextValue
+    )
+
+    voiceRepliesRef.current =
+      nextValue
+
+    if (!nextValue) {
+      tts.cancel()
+
+      if (
+        voiceConversationRef
+          .current
+      ) {
+        scheduleVoiceListening()
+      }
+    }
   }
 
   function closeChat() {
-    stopAllAudio()
+    stopVoiceConversation()
     setOpen(false)
+    openRef.current = false
   }
+
+  const voiceStatus =
+    loading
+      ? 'Processing'
+      : tts.speaking
+        ? 'Speaking'
+        : recognition.listening
+          ? 'Listening'
+          : 'Preparing'
 
   return (
     <div class="chat-widget">
       {open && (
-        <div class="chat-panel">
+        <section
+          class="chat-panel"
+          aria-label={
+            ct.title ||
+            'GDRFA support'
+          }
+        >
           <header class="chat-header">
             <div class="chat-header-icon">
               <Icon type="chat" />
             </div>
 
             <div class="chat-header-copy">
-              <strong>{ct.title}</strong>
-              <span>{ct.subtitle}</span>
+              <strong>
+                {ct.title}
+              </strong>
+
+              <span>
+                {ct.subtitle}
+              </span>
             </div>
 
             <div class="chat-header-actions">
               <button
                 type="button"
                 class="chat-header-action"
-                onClick={startNewChat}
+                onClick={
+                  startNewChat
+                }
                 title="New chat"
+                aria-label="Start a new chat"
               >
                 <Icon type="new" />
               </button>
@@ -316,6 +934,7 @@ useEffect(() => {
                 onClick={endChat}
                 disabled={chatEnded}
                 title="End chat"
+                aria-label="End chat"
               >
                 <Icon type="end" />
               </button>
@@ -325,57 +944,102 @@ useEffect(() => {
                 class="chat-close"
                 onClick={closeChat}
                 title="Close"
+                aria-label="Close chat"
               >
                 <Icon type="close" />
               </button>
             </div>
           </header>
 
-          <div class="chat-messages" ref={scrollRef}>
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                class={`chat-message ${message.role}`}
-              >
-                <div class="chat-bubble">
-                  {message.text
-                    .split('\n')
-                    .map((line, lineIndex) => (
-                      <p key={lineIndex}>{line}</p>
-                    ))}
+          <div
+            class="chat-messages"
+            ref={scrollRef}
+            aria-live="polite"
+          >
+            {messages.map(
+              (
+                message,
+                index
+              ) => (
+                <div
+                  key={index}
+                  class={
+                    `chat-message ` +
+                    message.role
+                  }
+                >
+                  <div class="chat-bubble">
+                    {message.text
+                      .split('\n')
+                      .map(
+                        (
+                          line,
+                          lineIndex
+                        ) => (
+                          <p
+                            key={
+                              lineIndex
+                            }
+                          >
+                            {line || ' '}
+                          </p>
+                        )
+                      )}
+                  </div>
+
+                  {message.role ===
+                    'bot' &&
+                    message.followups
+                      ?.length > 0 && (
+                      <div class="chat-followups">
+                        {message.followups.map(
+                          (
+                            followup
+                          ) => (
+                            <button
+                              key={
+                                followup
+                              }
+                              type="button"
+                              disabled={
+                                chatEnded ||
+                                loading ||
+                                voiceConversation
+                              }
+                              onClick={() =>
+                                sendMessage(
+                                  followup
+                                )
+                              }
+                            >
+                              {followup}
+                            </button>
+                          )
+                        )}
+                      </div>
+                    )}
                 </div>
+              )
+            )}
 
-                {message.role === 'bot' &&
-                  message.source && (
-                    <a
-                      class="chat-source"
-                      href={message.source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {message.source.title}
-                    </a>
-                  )}
+            {voiceConversation &&
+              recognition.listening &&
+              recognition.interimText && (
+                <div class="chat-message user chat-transcript-message">
+                  <div class="chat-bubble">
+                    <span class="chat-transcript-label">
+                      Listening
+                    </span>
 
-                {message.role === 'bot' &&
-                  message.followups?.length > 0 && (
-                    <div class="chat-followups">
-                      {message.followups.map((followup) => (
-                        <button
-                          key={followup}
-                          type="button"
-                          disabled={chatEnded}
-                          onClick={() =>
-                            sendMessage(followup)
-                          }
-                        >
-                          {followup}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            ))}
+                    <p>
+                      {
+                        recognition
+                          .interimText
+                      }
+                    </p>
+                  </div>
+                </div>
+              )}
 
             {loading && (
               <div class="chat-message bot">
@@ -388,9 +1052,49 @@ useEffect(() => {
             )}
           </div>
 
+          {voiceConversation && (
+            <div
+              class={
+                `chat-voice-session ` +
+                `is-${voiceStatus.toLowerCase()}`
+              }
+              role="status"
+            >
+              <div class="chat-voice-session-main">
+                <span class="chat-voice-session-dot" />
+
+                <div>
+                  <strong>
+                    Voice conversation active
+                  </strong>
+
+                  <span>
+                    {voiceStatus}
+                    {voiceStatus ===
+                      'Listening'
+                      ? '...'
+                      : ''}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  stopVoiceConversation()
+                }
+              >
+                End voice
+              </button>
+            </div>
+          )}
+
           {chatEnded && (
             <div class="chat-ended">
-              <strong>Chat ended</strong>
+              <strong>
+                Chat ended
+              </strong>
+
               <p>
                 Start a new chat or continue this conversation.
               </p>
@@ -398,7 +1102,9 @@ useEffect(() => {
               <div class="chat-ended-actions">
                 <button
                   type="button"
-                  onClick={startNewChat}
+                  onClick={
+                    startNewChat
+                  }
                 >
                   Start new chat
                 </button>
@@ -406,7 +1112,9 @@ useEffect(() => {
                 <button
                   type="button"
                   class="secondary"
-                  onClick={() => setChatEnded(false)}
+                  onClick={
+                    resumeChat
+                  }
                 >
                   Continue chat
                 </button>
@@ -414,108 +1122,190 @@ useEffect(() => {
             </div>
           )}
 
-          <form
-            class="chat-input-row"
-            onSubmit={(event) => {
-              event.preventDefault()
-              sendMessage(input)
-            }}
-          >
-            {recognition.supported && (
-              <button
-                type="button"
-                class={`chat-voice-button ${
-                  recognition.listening
-                    ? 'listening'
-                    : ''
-                }`}
-                onClick={toggleMic}
-                disabled={chatEnded || loading}
-                title={
-                  recognition.listening
-                    ? 'Finish speaking'
-                    : 'Speak'
-                }
-              >
-                <Icon type="mic" />
-              </button>
-            )}
+          {!chatEnded && (
+            <div class="chat-composer">
+              {!voiceConversation && (
+                <>
+                  <textarea
+                    ref={inputRef}
+                    rows={1}
+                    value={input}
+                    disabled={loading}
+                    placeholder={
+                      ct.placeholder
+                    }
+                    aria-label="Message"
+                    onInput={(
+                      event
+                    ) => {
+                      setInput(
+                        event
+                          .currentTarget
+                          .value
+                      )
+                    }}
+                    onKeyDown={(
+                      event
+                    ) => {
+                      if (
+                        event.key ===
+                          'Enter' &&
+                        !event.shiftKey
+                      ) {
+                        event.preventDefault()
 
-            <textarea
-            rows={1}
-            value={input}
-            disabled={chatEnded}
-            placeholder={chatEnded ? 'Start or continue the chat' : ct.placeholder}
-            onInput={(event) => {
-              setInput(event.target.value)
-              event.target.style.height = 'auto'
-              event.target.style.height = `${event.target.scrollHeight}px`
-            }}
-          />
+                        sendMessage(
+                          input
+                        )
+                      }
+                    }}
+                  />
 
-            <button
-              type="button"
-              class={`chat-voice-button ${
-                voiceReplies ? 'active' : ''
-              }`}
-              onClick={() => {
-                setVoiceReplies((current) => !current)
-                tts.cancel()
-              }}
-              title={
-                voiceReplies
-                  ? 'Mute spoken replies'
-                  : 'Enable spoken replies'
-              }
-            >
-              <Icon
-                type={
-                  voiceReplies
-                    ? 'volume'
-                    : 'volume-off'
-                }
-              />
-            </button>
+                  <div class="chat-composer-toolbar">
+                    <div class="chat-composer-tools">
+                      {recognition.supported && (
+                        <button
+                          type="button"
+                          class={
+                            `chat-tool-button ` +
+                            (
+                              recognition.listening
+                                ? 'is-listening'
+                                : ''
+                            )
+                          }
+                          onClick={
+                            toggleDictation
+                          }
+                          disabled={
+                            loading
+                          }
+                          title={
+                            recognition.listening
+                              ? 'Finish dictation'
+                              : 'Dictate a message'
+                          }
+                          aria-label={
+                            recognition.listening
+                              ? 'Finish dictation'
+                              : 'Dictate a message'
+                          }
+                        >
+                          <Icon type="mic" />
 
-            <button
-              type="submit"
-              disabled={
-                chatEnded ||
-                loading ||
-                !input.trim()
-              }
-            >
-              <Icon type="send" />
-            </button>
-          </form>
+                          <span>
+                            {recognition.listening
+                              ? 'Finish'
+                              : 'Dictate'}
+                          </span>
+                        </button>
+                      )}
 
-          {recognition.listening && (
-            <div class="chat-listening">
-              <span>Listening…</span>
+                      <button
+                        type="button"
+                        class={
+                          `chat-tool-button ` +
+                          (
+                            voiceReplies
+                              ? 'is-active'
+                              : ''
+                          )
+                        }
+                        onClick={
+                          toggleVoiceReplies
+                        }
+                        title={
+                          voiceReplies
+                            ? 'Turn spoken replies off'
+                            : 'Turn spoken replies on'
+                        }
+                        aria-pressed={
+                          voiceReplies
+                        }
+                      >
+                        <Icon
+                          type={
+                            voiceReplies
+                              ? 'volume'
+                              : 'volume-off'
+                          }
+                        />
 
-              <button
-                type="button"
-                onClick={recognition.stop}
-              >
-                Finish speaking
-              </button>
+                        <span>
+                          Read replies
+                        </span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="chat-send-button"
+                      onClick={() =>
+                        sendMessage(
+                          input
+                        )
+                      }
+                      disabled={
+                        loading ||
+                        !input.trim()
+                      }
+                      aria-label="Send message"
+                    >
+                      <Icon type="send" />
+                    </button>
+                  </div>
+
+                  {recognition.listening && (
+                    <div class="chat-dictation-status">
+                      <span class="chat-dictation-dot" />
+
+                      <span>
+                        Listening. Speak your message, then select Finish.
+                      </span>
+                    </div>
+                  )}
+
+                  {recognition.supported && (
+                    <button
+                      type="button"
+                      class="chat-start-voice"
+                      onClick={
+                        startVoiceConversation
+                      }
+                      disabled={
+                        loading
+                      }
+                    >
+                      <Icon type="voice" />
+
+                      <span>
+                        Start voice conversation
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           )}
 
-          {!recognition.supported && (
-            <div class="chat-listening">
-              Voice recognition requires Chrome or Edge.
+          {recognition.error && (
+            <div
+              class="chat-speech-error"
+              role="alert"
+            >
+              Voice input is temporarily unavailable. You can continue by typing.
             </div>
           )}
-        </div>
+        </section>
       )}
 
       <div class="chat-toggle-row">
-        {!open && !everOpened && (
-          <span class="chat-toggle-label">
-            {ct.toggleLabel}
-          </span>
-        )}
+        {!open &&
+          !everOpened && (
+            <span class="chat-toggle-label">
+              {ct.toggleLabel}
+            </span>
+          )}
 
         <button
           type="button"
@@ -528,8 +1318,19 @@ useEffect(() => {
               setEverOpened(true)
             }
           }}
+          aria-label={
+            open
+              ? 'Close chat'
+              : 'Open chat'
+          }
         >
-          <Icon type={open ? 'close' : 'chat'} />
+          <Icon
+            type={
+              open
+                ? 'close'
+                : 'chat'
+            }
+          />
         </button>
       </div>
     </div>
