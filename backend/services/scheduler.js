@@ -48,6 +48,7 @@ export function getAvailability(serviceId, date, partySize = 1) {
         centerName: center.name,
         centerType: center.type,
         location: center.location,
+        hasVipLounge: Boolean(center.hasVipLounge),
         date,
         time,
         capacity: center.slotCapacity,

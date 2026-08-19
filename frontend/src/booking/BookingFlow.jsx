@@ -4,7 +4,9 @@ import { useUaePass } from '../uaepass/UaePassContext'
 import { UaePassBadge, UaePassBanner } from '../uaepass/UaePassDocuments'
 import './booking.css'
 
-const STEPS = ['service', 'date', 'slot', 'documents', 'details', 'confirmation']
+const STEPS = ['service', 'tier', 'date', 'slot', 'documents', 'details', 'confirmation']
+
+const TIER_ICONS = { standard: '🕐', express: '⚡', vip: '⭐' }
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10)
@@ -30,6 +32,7 @@ export function BookingFlow({ onSelectFamilyService }) {
   const [servicesError, setServicesError] = useState(null)
 
   const [selectedService, setSelectedService] = useState(null)
+  const [selectedTier, setSelectedTier] = useState(null)
   const [selectedDate, setSelectedDate] = useState(null)
 
   const [availability, setAvailability] = useState(null)
@@ -81,6 +84,12 @@ export function BookingFlow({ onSelectFamilyService }) {
       return
     }
     setSelectedService(service)
+    setSelectedTier(null)
+    setStep('tier')
+  }
+
+  function chooseTier(tier) {
+    setSelectedTier(tier)
     setStep('date')
   }
 
@@ -159,7 +168,8 @@ export function BookingFlow({ onSelectFamilyService }) {
         time: selectedSlot.time,
         customerName: form.customerName,
         customerEmail: form.customerEmail,
-        customerPhone: form.customerPhone
+        customerPhone: form.customerPhone,
+        tierId: selectedTier?.tierId || 'standard'
       })
       setConfirmation(appointment)
       setStep('confirmation')
@@ -179,6 +189,7 @@ export function BookingFlow({ onSelectFamilyService }) {
   function restart() {
     setStep('service')
     setSelectedService(null)
+    setSelectedTier(null)
     setSelectedDate(null)
     setAvailability(null)
     setSelectedSlot(null)
@@ -204,12 +215,14 @@ export function BookingFlow({ onSelectFamilyService }) {
     <div class="booking-flow">
       <UaePassBanner />
       <div class="booking-progress">
-        {STEPS.slice(0, 5).map((s, i) => (
+        {STEPS.slice(0, 6).map((s, i) => (
           <div key={s} class={`booking-progress-step ${i <= stepIndex ? 'done' : ''} ${i === stepIndex ? 'current' : ''}`}>
             <span class="booking-progress-dot">{i < stepIndex ? '✓' : i + 1}</span>
             <span class="booking-progress-label">
               {s === 'service'
                 ? 'Service'
+                : s === 'tier'
+                ? 'Speed'
                 : s === 'date'
                 ? 'Date'
                 : s === 'slot'
@@ -235,10 +248,45 @@ export function BookingFlow({ onSelectFamilyService }) {
             {services.map((service) => (
               <button key={service.id} class="booking-service-card" onClick={() => chooseService(service)} type="button">
                 <strong>{service.name}</strong>
-                <span class="booking-fee">{service.feeAed} AED</span>
+                <span class="booking-fee">From {service.feeAed} AED</span>
                 <span class="booking-duration">~{service.avgDurationMinutes} min</span>
                 {service.id === 'family-residence' && (
                   <span class="booking-family-hint">Includes spouse &amp; children — one shared visit →</span>
+                )}
+                {service.id !== 'family-residence' && (
+                  <span class="booking-tier-hint">Standard, Express or VIP available</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {step === 'tier' && selectedService && (
+        <div class="booking-step booking-step-anim">
+          <button type="button" class="booking-back" onClick={() => setStep('service')}>← Back</button>
+          <h2>How fast do you want it done?</h2>
+          <p class="booking-hint">
+            {selectedService.name} — pick the speed that matters to you. You can always come back and choose a
+            different one.
+          </p>
+
+          <div class="booking-tier-grid">
+            {selectedService.tiers.map((tier) => (
+              <button
+                key={tier.tierId}
+                type="button"
+                class={`booking-tier-card booking-tier-${tier.tierId}`}
+                onClick={() => chooseTier(tier)}
+              >
+                {tier.tierId === 'express' && <span class="booking-tier-badge">Most popular</span>}
+                <span class="booking-tier-icon">{TIER_ICONS[tier.tierId]}</span>
+                <strong class="booking-tier-name">{tier.tierName}</strong>
+                <span class="booking-tier-fee">{tier.feeAed} AED</span>
+                <span class="booking-tier-duration">~{tier.durationMinutes} min at the counter</span>
+                <span class="booking-tier-desc">{tier.description}</span>
+                {tier.tierId === 'vip' && (
+                  <span class="booking-tier-note">Only offered at select VIP-lounge centers — shown next</span>
                 )}
               </button>
             ))}
@@ -248,8 +296,14 @@ export function BookingFlow({ onSelectFamilyService }) {
 
       {step === 'date' && selectedService && (
         <div class="booking-step booking-step-anim">
-          <button type="button" class="booking-back" onClick={() => setStep('service')}>← Back</button>
+          <button type="button" class="booking-back" onClick={() => setStep('tier')}>← Back</button>
           <h2>Choose a date for {selectedService.name}</h2>
+          {selectedTier && (
+            <p class="booking-tier-chip">
+              {TIER_ICONS[selectedTier.tierId]} {selectedTier.tierName} · {selectedTier.feeAed} AED
+              <button type="button" class="booking-tier-chip-change" onClick={() => setStep('tier')}>Change</button>
+            </p>
+          )}
 
           <div class="booking-docs-callout">
             <div class="booking-docs-callout-header">
@@ -273,48 +327,73 @@ export function BookingFlow({ onSelectFamilyService }) {
         </div>
       )}
 
-      {step === 'slot' && selectedService && selectedDate && (
-        <div class="booking-step booking-step-anim">
-          <button type="button" class="booking-back" onClick={() => setStep('date')}>← Back</button>
-          <h2>Available centers & times</h2>
-          <p class="booking-hint">
-            {selectedService.name} · {new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+      {step === 'slot' && selectedService && selectedDate && (() => {
+        const isVip = selectedTier?.tierId === 'vip'
+        // VIP only exists at select centers — filter down to those, rather
+        // than showing every center and letting the booking fail later.
+        const eligibleSlots = isVip
+          ? availability?.slots?.filter((s) => s.hasVipLounge)
+          : availability?.slots
+        const recommended = isVip
+          ? (availability?.recommended?.hasVipLounge ? availability.recommended : eligibleSlots?.[0])
+          : availability?.recommended
 
-          {submitError && <p class="booking-error">{submitError}</p>}
-          {availabilityLoading && <p class="booking-hint">Checking real-time availability…</p>}
-          {availabilityError && <p class="booking-error">{availabilityError}</p>}
+        return (
+          <div class="booking-step booking-step-anim">
+            <button type="button" class="booking-back" onClick={() => setStep('date')}>← Back</button>
+            <h2>Available centers & times</h2>
+            <p class="booking-hint">
+              {selectedService.name}
+              {selectedTier && <> · {selectedTier.tierName} ({selectedTier.feeAed} AED)</>}
+              {' · '}{new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+            {isVip && (
+              <p class="booking-hint booking-tier-vip-note">
+                Showing only centers with a VIP lounge.
+              </p>
+            )}
 
-          {availability && availability.recommended && (
-            <div class="booking-recommended">
-              <span class="booking-recommended-badge">
-                Recommended — lowest wait
-                <span class="booking-tooltip-wrap">
-                  <span class="booking-tooltip-trigger" tabIndex={0}>ⓘ</span>
-                  <span class="booking-tooltip-bubble">
-                    Ranked from live bookings at each center for this date — not random. We compare how full
-                    every slot already is and put the least-booked, soonest option first.
+            {submitError && <p class="booking-error">{submitError}</p>}
+            {availabilityLoading && <p class="booking-hint">Checking real-time availability…</p>}
+            {availabilityError && <p class="booking-error">{availabilityError}</p>}
+
+            {recommended && (
+              <div class="booking-recommended">
+                <span class="booking-recommended-badge">
+                  Recommended — lowest wait
+                  <span class="booking-tooltip-wrap">
+                    <span class="booking-tooltip-trigger" tabIndex={0}>ⓘ</span>
+                    <span class="booking-tooltip-bubble">
+                      Ranked from live bookings at each center for this date — not random. We compare how full
+                      every slot already is and put the least-booked, soonest option first.
+                    </span>
                   </span>
                 </span>
-              </span>
-              <SlotCard slot={availability.recommended} onSelect={chooseSlot} highlight />
+                <SlotCard slot={recommended} onSelect={chooseSlot} highlight />
+              </div>
+            )}
+
+            <div class="booking-slot-list">
+              {eligibleSlots
+                ?.filter((s) => !(recommended && s.centerId === recommended.centerId && s.time === recommended.time))
+                .slice(0, 12)
+                .map((slot) => (
+                  <SlotCard key={`${slot.centerId}-${slot.time}`} slot={slot} onSelect={chooseSlot} />
+                ))}
             </div>
-          )}
 
-          <div class="booking-slot-list">
-            {availability?.slots
-              ?.filter((s) => !(availability.recommended && s.centerId === availability.recommended.centerId && s.time === availability.recommended.time))
-              .slice(0, 12)
-              .map((slot) => (
-                <SlotCard key={`${slot.centerId}-${slot.time}`} slot={slot} onSelect={chooseSlot} />
-              ))}
+            {availability && eligibleSlots?.length === 0 && isVip && (
+              <p class="booking-error">
+                No VIP slots for this date. Try another date, or
+                {' '}<button type="button" class="booking-link-btn" onClick={() => setStep('tier')}>choose a different speed</button>.
+              </p>
+            )}
+            {availability && availability.slots?.length === 0 && !isVip && (
+              <p class="booking-error">No availability in the next visible window for this date. Try another date.</p>
+            )}
           </div>
-
-          {availability && availability.slots?.length === 0 && (
-            <p class="booking-error">No availability in the next visible window for this date. Try another date.</p>
-          )}
-        </div>
-      )}
+        )
+      })()}
 
       {step === 'documents' && selectedService && selectedSlot && (
         <div class="booking-step booking-step-anim">
@@ -425,10 +504,11 @@ export function BookingFlow({ onSelectFamilyService }) {
 
           <div class="booking-summary">
             <div><span>Service</span><strong>{selectedService.name}</strong></div>
+            <div><span>Speed</span><strong>{TIER_ICONS[selectedTier?.tierId]} {selectedTier?.tierName || 'Standard'}</strong></div>
             <div><span>Center</span><strong>{selectedSlot.centerName}</strong></div>
             <div><span>Date</span><strong>{new Date(selectedSlot.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</strong></div>
             <div><span>Time</span><strong>{selectedSlot.time}</strong></div>
-            <div><span>Fee</span><strong>{selectedService.feeAed} AED</strong></div>
+            <div><span>Fee</span><strong>{selectedTier?.feeAed ?? selectedService.feeAed} AED</strong></div>
           </div>
 
           <div class="booking-documents">
@@ -488,6 +568,7 @@ export function BookingFlow({ onSelectFamilyService }) {
 
           <div class="booking-summary">
             <div><span>Service</span><strong>{confirmation.serviceName}</strong></div>
+            <div><span>Speed</span><strong>{TIER_ICONS[confirmation.tierId]} {confirmation.tierName}</strong></div>
             <div><span>Center</span><strong>{confirmation.centerName}</strong></div>
             <div><span>Date</span><strong>{new Date(confirmation.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</strong></div>
             <div><span>Time</span><strong>{confirmation.time}</strong></div>
@@ -512,6 +593,7 @@ function SlotCard({ slot, onSelect, highlight }) {
     <button type="button" class={`booking-slot-card ${highlight ? 'highlight' : ''}`} onClick={() => onSelect(slot)}>
       <div class="booking-slot-top">
         <strong>{slot.centerName}</strong>
+        {slot.hasVipLounge && <span class="booking-slot-vip">⭐ VIP lounge</span>}
         <span class={`booking-slot-load ${busyClass}`}>{busyLabel}</span>
       </div>
       <div class="booking-slot-bottom">

@@ -12,7 +12,8 @@ export const centers = [
     // Larger main office => higher base capacity.
     slotCapacity: 6,
     openHour: 8,
-    closeHour: 16
+    closeHour: 16,
+    hasVipLounge: true
   },
   {
     id: 'amer-albarsha',
@@ -21,7 +22,8 @@ export const centers = [
     location: 'Al Barsha 1, Dubai',
     slotCapacity: 3,
     openHour: 8,
-    closeHour: 20
+    closeHour: 20,
+    hasVipLounge: false
   },
   {
     id: 'amer-deira',
@@ -30,7 +32,18 @@ export const centers = [
     location: 'Deira, Dubai',
     slotCapacity: 3,
     openHour: 8,
-    closeHour: 20
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-deira-247',
+    name: 'Amer Center - Deira (24/7)',
+    type: 'Amer',
+    location: 'Near Abu Baker Al Siddique Metro, Deira, Dubai',
+    slotCapacity: 2,
+    openHour: 0,
+    closeHour: 24,
+    hasVipLounge: false
   },
   {
     id: 'amer-karama',
@@ -39,16 +52,194 @@ export const centers = [
     location: 'Al Karama, Dubai',
     slotCapacity: 2,
     openHour: 9,
-    closeHour: 18
+    closeHour: 18,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-mankhool',
+    name: 'Amer Center - Mankhool',
+    type: 'Amer',
+    location: 'Mankhool, Bur Dubai',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-qusais',
+    name: 'Amer Center - Al Qusais',
+    type: 'Amer',
+    location: 'Al Qusais, Dubai',
+    slotCapacity: 3,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-silicon-oasis',
+    name: 'Amer Center - Dubai Silicon Oasis',
+    type: 'Amer',
+    location: 'Dubai Silicon Oasis',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-dafza',
+    name: 'Amer Center - DAFZA',
+    type: 'Amer',
+    location: 'Dubai Airport Free Zone',
+    slotCapacity: 2,
+    openHour: 7,
+    closeHour: 19,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-alnahda',
+    name: 'Amer Center - Al Nahda',
+    type: 'Amer',
+    location: 'Al Nahda, Dubai',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-altwar',
+    name: 'Amer Center - Al Twar',
+    type: 'Amer',
+    location: 'Al Twar, Dubai',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-satwa',
+    name: 'Amer Center - Al Satwa',
+    type: 'Amer',
+    location: 'Al Satwa, Dubai',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-garhoud',
+    name: 'Amer Center - Garhoud',
+    type: 'Amer',
+    location: 'Garhoud, Dubai',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-mirdif',
+    name: 'Amer Center - Mirdif',
+    type: 'Amer',
+    location: 'Mirdif, Dubai',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-rashidiya',
+    name: 'Amer Center - Al Rashidiya',
+    type: 'Amer',
+    location: 'Al Rashidiya, Dubai',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-difc',
+    name: 'Amer Center - DIFC (Smart Lounge)',
+    type: 'Amer',
+    location: 'Oasis Towers, DIFC, Dubai',
+    slotCapacity: 3,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: true
+  },
+  {
+    id: 'amer-kifaf',
+    name: 'Amer Center - Al Kifaf',
+    type: 'Amer',
+    location: 'Al Kifaf, Dubai',
+    slotCapacity: 2,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: false
+  },
+  {
+    id: 'amer-businessbay',
+    name: 'Amer Center - Business Bay',
+    type: 'Amer',
+    location: 'Business Bay, Dubai',
+    slotCapacity: 3,
+    openHour: 8,
+    closeHour: 20,
+    hasVipLounge: true
+  },
+  {
+    id: 'gdrfa-airport-t3',
+    name: 'GDRFA - Dubai Airport Terminal 3',
+    type: 'GDRFA',
+    location: 'DXB Terminal 3, Gate 2 Arrivals, Dubai',
+    slotCapacity: 2,
+    openHour: 0,
+    closeHour: 24,
+    hasVipLounge: false
   }
 ]
 
+// --- Service tiers ------------------------------------------------------
+//
+// Every service can be booked at one of three service levels. The
+// top-level `feeAed` / `avgDurationMinutes` on each service below are the
+// STANDARD tier figures (kept as-is so existing booking/appointment code
+// that reads those fields directly doesn't need to change). `tiers` is
+// additive detail for the booking UI and employee interface to offer
+// Express / VIP options with their own fee and turnaround.
+export const serviceTiers = [
+  {
+    id: 'standard',
+    name: 'Standard',
+    feeMultiplier: 1,
+    durationMultiplier: 1,
+    description: 'Regular queue, standard processing time.'
+  },
+  {
+    id: 'express',
+    name: 'Express',
+    feeMultiplier: 1.5,
+    durationMultiplier: 0.6,
+    description: 'Priority queue position, faster counter processing.'
+  },
+  {
+    id: 'vip',
+    name: 'VIP',
+    feeMultiplier: 2.5,
+    durationMultiplier: 0.4,
+    description: 'Dedicated VIP lounge, private counter, fastest turnaround. Available only at centers with hasVipLounge: true.'
+  }
+]
+
+// Importance/category classification used to prioritize cases in the
+// employee interface and to flag special cases that need extra review
+// (as opposed to routine, high-volume transactions).
+// One of: 'routine' | 'family' | 'investment' | 'sensitive'
 export const services = [
   {
     id: 'residence-renewal',
     name: 'Residence Visa Renewal',
     feeAed: 500,
     avgDurationMinutes: 20,
+    category: 'routine',
     documents: [
       'Valid passport (original + copy)',
       'Emirates ID (original + copy)',
@@ -61,6 +252,7 @@ export const services = [
     name: 'Entry Permit Issuance',
     feeAed: 700,
     avgDurationMinutes: 25,
+    category: 'routine',
     documents: [
       'Sponsor passport copy',
       'Applicant passport copy',
@@ -73,6 +265,7 @@ export const services = [
     name: 'Family Residence Permit',
     feeAed: 600,
     avgDurationMinutes: 30,
+    category: 'family',
     documents: [
       'Sponsor Emirates ID and passport copy',
       'Family member passport copy',
@@ -85,6 +278,7 @@ export const services = [
     name: 'Golden Visa Application',
     feeAed: 2800,
     avgDurationMinutes: 40,
+    category: 'investment',
     documents: [
       'Passport copy',
       'Proof of eligibility (property, investment, or talent criteria)',
@@ -93,6 +287,19 @@ export const services = [
     ]
   }
 ]
+
+// Convenience helper: resolve the fee/duration for a given service at a
+// given tier. Falls back to the service's base (standard) figures if the
+// tier isn't recognized.
+export function resolveTierPricing(service, tierId = 'standard') {
+  const tier = serviceTiers.find((t) => t.id === tierId) || serviceTiers[0]
+  return {
+    tierId: tier.id,
+    tierName: tier.name,
+    feeAed: Math.round(service.feeAed * tier.feeMultiplier),
+    durationMinutes: Math.max(5, Math.round(service.avgDurationMinutes * tier.durationMultiplier))
+  }
+}
 
 // Which services each center type is able to process.
 // Amer centers don't process Golden Visa applications, for example.

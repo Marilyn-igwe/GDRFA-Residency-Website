@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { services, centers } from '../data/seedData.js'
+import { services, centers, resolveTierPricing } from '../data/seedData.js'
 import { findSlot, generateReference, getAvailability } from '../services/scheduler.js'
 import {
   incrementBookedCount,
@@ -11,9 +11,9 @@ import {
 const router = Router()
 
 // POST /api/appointments
-// body: { serviceId, centerId, date, time, customerName, customerEmail, customerPhone }
+// body: { serviceId, centerId, date, time, customerName, customerEmail, customerPhone, tierId }
 router.post('/appointments', (req, res) => {
-  const { serviceId, centerId, date, time, customerName, customerEmail, customerPhone } = req.body || {}
+  const { serviceId, centerId, date, time, customerName, customerEmail, customerPhone, tierId } = req.body || {}
 
   if (!serviceId || !centerId || !date || !time || !customerName || !customerEmail) {
     return res.status(400).json({
@@ -25,6 +25,15 @@ router.post('/appointments', (req, res) => {
   const center = centers.find((c) => c.id === centerId)
   if (!service) return res.status(404).json({ error: 'Unknown serviceId' })
   if (!center) return res.status(404).json({ error: 'Unknown centerId' })
+
+  // VIP is a real, dedicated-lounge experience — only bookable at centers
+  // that actually have one. Anything else (standard/express) is available
+  // everywhere, so this check only ever blocks VIP at the wrong center.
+  if (tierId === 'vip' && !center.hasVipLounge) {
+    return res.status(400).json({
+      error: `${center.name} doesn't have a VIP lounge. Choose a VIP-enabled center or a different tier.`
+    })
+  }
 
   const slot = findSlot(serviceId, date, centerId, time)
 
@@ -38,13 +47,17 @@ router.post('/appointments', (req, res) => {
     })
   }
 
+  const pricing = resolveTierPricing(service, tierId || 'standard')
   const reference = generateReference()
 
   const appointment = {
     reference,
     serviceId,
     serviceName: service.name,
-    feeAed: service.feeAed,
+    tierId: pricing.tierId,
+    tierName: pricing.tierName,
+    feeAed: pricing.feeAed,
+    estimatedDurationMinutes: pricing.durationMinutes,
     centerId,
     centerName: center.name,
     date,
