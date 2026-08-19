@@ -1,11 +1,44 @@
 .lw-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #ffffff 0%, #faf3ef 100%);
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 15% 10%, #fff8f4 0%, #faf3ef 45%, #f6ece4 100%);
   display: flex;
   flex-direction: column;
 }
 
+/* Soft decorative blobs floating in the background for a bit of
+   polish — purely atmospheric, sit behind everything, ignored by
+   screen readers and never intercept clicks. */
+.lw-page::before,
+.lw-page::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lw-page::before {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(138, 28, 47, 0.10), transparent 70%);
+}
+
+.lw-page::after {
+  width: 380px;
+  height: 380px;
+  bottom: -160px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(201, 154, 63, 0.14), transparent 70%);
+}
+
 .lw-header {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -19,19 +52,41 @@
 }
 
 .lw-body {
+  position: relative;
+  z-index: 1;
   flex: 1;
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 60px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  max-width: 1100px;
+  gap: 30px;
+  max-width: 600px;
   margin: 0 auto;
-  padding: 40px 7vw 80px;
+  padding: 8px 7vw 80px;
   width: 100%;
+  text-align: center;
 }
 
-.lw-left {
-  max-width: 480px;
+/* Always-visible, never-rotating — makes it unmistakable at a glance
+   that this is the language-selection screen. */
+.lw-badge {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 18px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #f0d8cc;
+  box-shadow: 0 4px 14px rgba(138, 28, 47, 0.08);
+  color: #8a1c2f;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.lw-intro {
+  max-width: 540px;
 }
 
 .lw-rotate {
@@ -50,264 +105,236 @@
 }
 
 .lw-eyebrow {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   color: #8a1c2f;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.6px;
 }
 
-.lw-left h1 {
+.lw-intro h1 {
   margin: 0 0 10px;
-  font-size: 38px;
-  line-height: 1.15;
-  font-weight: 600;
-  color: #222;
+  font-size: 33px;
+  line-height: 1.18;
+  font-weight: 650;
+  color: #201c1c;
   letter-spacing: -0.8px;
 }
 
 .lw-subtitle {
-  margin: 0 0 28px;
-  color: #777;
-  font-size: 14px;
-}
-
-.lw-input {
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-.lw-input:focus {
-  outline: none;
-  border-color: #8a1c2f;
-}
-
-.lw-no-match {
-  margin: 0 0 14px;
-  font-size: 12px;
-  color: #9b2635;
-}
-
-.lw-tile-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.lw-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 10px;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  text-align: left;
-  transition: 0.15s ease;
-}
-
-.lw-tile:hover {
-  border-color: #8a1c2f;
-  background: #faf3ef;
-}
-
-.lw-tile.active {
-  border-color: #8a1c2f;
-  background: #faf3ef;
-  box-shadow: 0 0 0 1px #8a1c2f;
-}
-
-.lw-tile strong {
-  font-size: 13px;
-  color: #333;
-}
-
-.lw-tile span {
-  font-size: 10px;
-  color: #999;
-}
-
-.lw-suggestions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 20px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.lw-suggestions button {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  text-align: left;
-  padding: 10px 14px;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 13px;
-  color: #333;
-  transition: 0.15s ease;
-}
-
-.lw-suggestions button:hover {
-  border-color: #8a1c2f;
-  background: #faf3ef;
-}
-
-.lw-suggestions button span {
-  color: #999;
-  font-size: 12px;
+  margin: 0;
+  color: #8a7f7c;
+  font-size: 14.5px;
 }
 
 .lw-confirm {
   width: 100%;
-  padding: 14px;
+  max-width: 400px;
+  padding: 15px;
   border: none;
-  border-radius: 6px;
-  background: #8a1c2f;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #8a1c2f, #6f1626);
   color: #fff;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  margin-bottom: 12px;
-  transition: 0.2s ease;
+  box-shadow: 0 12px 28px rgba(138, 28, 47, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .lw-confirm:hover:not(:disabled) {
-  background: #6f1626;
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(138, 28, 47, 0.28);
 }
 
 .lw-confirm:disabled {
-  background: #d8b9bf;
+  background: #e6cdd2;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
-.lw-skip {
-  display: block;
-  width: 100%;
-  text-align: center;
-  border: none;
-  background: none;
-  color: #999;
-  font-size: 12px;
-  text-decoration: underline;
-  cursor: pointer;
-}
+/* =========================================
+   PICKER — the big, clickable circle. Shows "Click me" until a
+   language is picked, then shows that language's name. Clicking it
+   reveals a list of language buttons BELOW it, in normal document
+   flow, so it pushes the rest of the page down instead of floating
+   over the heading above.
+========================================= */
 
-.lw-right {
+.lw-picker {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 26px;
 }
 
 .lw-sphere {
-  width: 280px;
-  height: 280px;
+  width: 196px;
+  height: 196px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffffff, #f3e6e8 70%, #e6c8ce 100%);
-  border: 1px solid #eeddd9;
-  box-shadow: 0 20px 60px rgba(138, 28, 47, 0.15), inset 0 0 40px rgba(138, 28, 47, 0.06);
+  background: radial-gradient(circle at 32% 28%, #ffffff, #f6e8ea 65%, #ecccd3 100%);
+  border: 1px solid #f0d8cc;
+  box-shadow: 0 22px 50px rgba(138, 28, 47, 0.16), inset 0 0 0 6px #ffffffaa, inset 0 0 40px rgba(138, 28, 47, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  transition: transform 0.3s ease;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+  animation: lw-breathe 4.5s ease-in-out infinite;
 }
 
-.lw-sphere.spinning {
-  animation: lw-spin 0.9s linear infinite;
+@keyframes lw-breathe {
+  0%, 100% { box-shadow: 0 22px 50px rgba(138, 28, 47, 0.16), inset 0 0 0 6px #ffffffaa, inset 0 0 40px rgba(138, 28, 47, 0.05); }
+  50% { box-shadow: 0 26px 60px rgba(138, 28, 47, 0.22), inset 0 0 0 6px #ffffffaa, inset 0 0 40px rgba(138, 28, 47, 0.08); }
 }
 
-@keyframes lw-spin {
-  from {
-    transform: rotate(0deg) scale(1.02);
+@media (prefers-reduced-motion: reduce) {
+  .lw-sphere {
+    animation: none;
   }
-  50% {
-    transform: rotate(180deg) scale(0.98);
-  }
-  to {
-    transform: rotate(360deg) scale(1.02);
-  }
+}
+
+.lw-sphere:hover {
+  transform: scale(1.04);
+}
+
+.lw-sphere:focus-visible {
+  outline: 3px solid #8a1c2f;
+  outline-offset: 4px;
+}
+
+.lw-sphere.split {
+  transform: scale(0.9);
+  animation: none;
 }
 
 .lw-sphere-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   text-align: center;
   padding: 20px;
 }
 
-.lw-sphere.spinning .lw-sphere-inner {
-  animation: lw-counter-spin 0.9s linear infinite;
-}
-
-@keyframes lw-counter-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(-360deg);
-  }
-}
-
 .lw-sphere-inner strong {
-  font-size: 26px;
+  font-size: 22px;
   color: #8a1c2f;
   font-weight: 700;
 }
 
 .lw-sphere-inner span {
-  font-size: 13px;
-  color: #777;
+  font-size: 12.5px;
+  color: #9a8f8c;
 }
 
-.lw-sphere-searching {
-  font-size: 13px;
+.lw-sphere-click {
+  font-size: 15px;
   color: #8a1c2f;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
-.lw-sphere-placeholder {
-  font-size: 13px;
-  color: #bbb;
+/* =========================================
+   BUTTON LIST — the six language options, revealed below the circle
+   as long, full-width rows rather than a tight grid, so each one is
+   easy to tap and easy to read.
+========================================= */
+
+.lw-button-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 460px;
+  animation: lw-list-in 0.28s ease both;
+}
+
+@keyframes lw-list-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-button-grid {
+    animation: none;
+  }
+}
+
+.lw-lang-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid #f0d8cc;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lw-lang-button:hover,
+.lw-lang-button:focus-visible {
+  border-color: #8a1c2f;
+  background: #fdf5f2;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(138, 28, 47, 0.1);
+  outline: none;
+}
+
+.lw-lang-button.active {
+  border-color: #8a1c2f;
+  background: #fdf1ec;
+  box-shadow: 0 0 0 1px #8a1c2f, 0 8px 20px rgba(138, 28, 47, 0.14);
+}
+
+.lw-lang-names {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.lw-lang-names strong {
+  font-size: 15.5px;
+  color: #2a2422;
+}
+
+.lw-lang-names span {
+  font-size: 12px;
+  color: #9a8f8c;
+}
+
+.lw-lang-arrow {
+  font-size: 14px;
+  color: #c9a3ac;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.lw-lang-button:hover .lw-lang-arrow,
+.lw-lang-button.active .lw-lang-arrow {
+  color: #8a1c2f;
+  transform: translateX(3px);
 }
 
 @media (max-width: 800px) {
   .lw-body {
-    grid-template-columns: 1fr;
-    gap: 36px;
-    padding-top: 20px;
+    gap: 22px;
   }
 
-  .lw-left {
-    max-width: 100%;
-  }
-
-  .lw-right {
-    order: -1;
+  .lw-intro h1 {
+    font-size: 25px;
   }
 
   .lw-sphere {
-    width: 200px;
-    height: 200px;
+    width: 156px;
+    height: 156px;
   }
 
-  .lw-left h1 {
-    font-size: 30px;
-  }
-
-  .lw-tile-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .lw-lang-button {
+    padding: 14px 18px;
   }
 }

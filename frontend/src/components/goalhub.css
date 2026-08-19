@@ -200,26 +200,35 @@
   padding: 16px 10px 14px;
   text-align: center;
 
+  /* Every chip is fully legible all the time — only the border/shadow
+     changes to show which one is selected. Dimming the other five to
+     55% opacity (the old behavior) made them look disabled and was
+     unreadable for anyone with low vision, so selection state is now
+     shown purely through color/elevation, never through opacity. */
   background: #fff;
-  border: 1px solid rgba(236, 224, 214, 0.9);
+  border: 1.5px solid #d8c7bc;
   border-radius: 20px; /* squircle */
-  opacity: 0.55;
-  transform: scale(0.94);
+  box-shadow: 0 2px 8px rgba(60, 30, 25, 0.05);
 
-  transition: opacity 0.25s ease, transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .goal-chip.active {
-  opacity: 1;
-  transform: scale(1);
   border-color: #8a1c2f;
-  box-shadow: 0 14px 30px rgba(138, 28, 47, 0.16);
+  border-width: 2px;
+  box-shadow: 0 14px 30px rgba(138, 28, 47, 0.18);
+  transform: translateY(-2px);
 }
 
 .goal-chip:hover,
 .goal-chip:focus-visible {
-  opacity: 1;
+  border-color: #8a1c2f;
   outline: none;
+}
+
+.goal-chip:focus-visible {
+  outline: 2px solid #8a1c2f;
+  outline-offset: 2px;
 }
 
 .goal-chip-badge {

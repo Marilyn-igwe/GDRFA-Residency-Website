@@ -27,7 +27,7 @@ export function GoalHub({ t, onNavigate }) {
 
   const activeCard = gh.cards[activeIndex]
 
-  function goToAction(action) {
+  function goToAction(action, originEl) {
     if (action === 'notsure') {
       setStep(1)
       setWho(null)
@@ -37,9 +37,9 @@ export function GoalHub({ t, onNavigate }) {
     onNavigate(action)
   }
 
-  function selectCard(i) {
+  function selectCard(i, e) {
     if (i === activeIndex) {
-      goToAction(gh.cards[i].action)
+      goToAction(gh.cards[i].action, e?.currentTarget)
       return
     }
     setActiveIndex(i)
@@ -90,7 +90,7 @@ export function GoalHub({ t, onNavigate }) {
             <strong>{activeCard.title}</strong>
             <p>{activeCard.description}</p>
           </div>
-          <button type="button" class="goal-featured-cta" onClick={() => goToAction(activeCard.action)}>
+          <button type="button" class="goal-featured-cta" onClick={(e) => goToAction(activeCard.action, e.currentTarget)}>
             {gh.continueLabel || 'Continue'}
             <span aria-hidden="true">→</span>
           </button>
@@ -117,7 +117,7 @@ export function GoalHub({ t, onNavigate }) {
                 role="option"
                 aria-selected={i === activeIndex}
                 class={`goal-chip ${i === activeIndex ? 'active' : ''} ${card.action === 'notsure' ? 'goal-chip-muted' : ''}`}
-                onClick={() => selectCard(i)}
+                onClick={(e) => selectCard(i, e)}
               >
                 <span class={`goal-chip-badge ${i % 2 === 0 ? 'badge-gold' : 'badge-maroon'}`}>
                   <span aria-hidden="true">{card.icon}</span>
