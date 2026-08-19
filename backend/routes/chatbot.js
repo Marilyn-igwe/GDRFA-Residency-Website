@@ -12,8 +12,35 @@ const MAX_MESSAGE_LENGTH = 4000
 const MAX_HISTORY_ITEMS = 6
 const MAX_HISTORY_ITEM_LENGTH = 1200
 
-const GEMINI_TIMEOUT_MS = 15000
-const GEMINI_MAX_RETRIES = 1
+const GEMINI_TIMEOUT_MS = 45000
+const GEMINI_MAX_RETRIES = 3
+
+const LOCAL_APP_INTENTS = new Set([
+  'greeting',
+  'hours',
+  'centers-list',
+  'services-overview',
+  'booking-howto',
+  'application-status-help',
+  'not-sure-what-to-do'
+])
+
+function isLocalAppReply(result) {
+  return Boolean(
+    result &&
+    (
+      LOCAL_APP_INTENTS.has(
+        result.matchedIntent
+      ) ||
+      result.matchedIntent?.startsWith(
+        'application-status-'
+      ) ||
+      result.matchedIntent?.startsWith(
+        'humanitarian-status-'
+      )
+    )
+  )
+}
 
 const EMAIL_PATTERN =
   /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
@@ -255,6 +282,26 @@ function createNoMatchResponse(
 ) {
   if (
     reason ===
+    'ambiguous-residence-renewal'
+  ) {
+    return (
+      'Residence renewal requirements depend on the permit type. ' +
+      'Please select or enter the relevant category, such as family sponsorship, property owner, humanitarian case, green residence, or golden residence.'
+    )
+  }
+
+  if (
+    reason ===
+    'ambiguous-golden-residence'
+  ) {
+    return (
+      'Golden Residence requirements depend on the applicant category. ' +
+      'Please specify the relevant category, such as investor, entrepreneur, scientist or specialist, outstanding student or graduate, creative talent, or humanitarian pioneer.'
+    )
+  }
+
+  if (
+    reason ===
     'official-information-unavailable'
   ) {
     return (
@@ -378,7 +425,7 @@ async function callGemini({
               ],
 
               generationConfig: {
-                maxOutputTokens: 700,
+                maxOutputTokens: 2048,
                 temperature: 0.15,
                 topP: 0.8
               }
@@ -413,7 +460,12 @@ async function callGemini({
         throw lastError
       }
 
-      await sleep(500)
+      await sleep(
+        Math.min(
+          2000 * 2 ** attempt,
+          8000
+        )
+      )
     } catch (error) {
       lastError = error
 
@@ -433,7 +485,12 @@ async function callGemini({
         throw error
       }
 
-      await sleep(500)
+      await sleep(
+        Math.min(
+          2000 * 2 ** attempt,
+          8000
+        )
+      )
     }
   }
 
@@ -586,6 +643,19 @@ router.post(
       })
     }
 
+    const localAppReply =
+      getChatbotReply(message)
+
+    if (
+      isLocalAppReply(
+        localAppReply
+      )
+    ) {
+      return res.json(
+        localAppReply
+      )
+    }
+
     if (
       !process.env.GEMINI_API_KEY
     ) {
@@ -597,10 +667,43 @@ router.post(
       })
     }
 
+    let retrieval = null
+
     try {
-      const retrieval =
+      const previousUserEntries =
+        [...history]
+          .reverse()
+          .filter(
+            (item) =>
+              item.role === 'user'
+          )
+
+      const serviceTopicPattern =
+        /\b(visa|residence|residency|permit|golden|green|family|spouse|wife|husband|child|children|humanitarian|property|owner|investor|employment|entry|exit|passport|renew|renewal)\b/i
+
+      const previousUserEntry =
+        previousUserEntries.find(
+          (item) =>
+            serviceTopicPattern.test(
+              item.content
+            )
+        ) ||
+        previousUserEntries[0]
+
+      const previousUserMessage =
+        previousUserEntry
+          ? previousUserEntry.content
+          : ''
+
+      const retrievalMessage =
+        message.length <= 120 &&
+        previousUserMessage
+          ? `${previousUserMessage}\nClarification: ${message}`
+          : message
+
+      retrieval =
         await retrieveRelevantServices(
-          message
+          retrievalMessage
         )
 
       if (
@@ -628,7 +731,7 @@ router.post(
 
       const model =
         process.env.GEMINI_MODEL ||
-        'gemini-2.5-flash'
+        'gemini-3.6-flash'
 
       const endpoint =
         `https://generativelanguage.googleapis.com/` +
@@ -703,6 +806,25 @@ router.post(
         'Application support error:',
         error.message
       )
+
+      if (retrieval?.sources?.length) {
+        return res.json({
+          reply:
+            `I found the official ${retrieval.matchedService} service, but the response service is temporarily busy. ` +
+            `Please use the official service link below, or try the question again shortly.`,
+          followups: [],
+          matchedIntent:
+            'official-service-fallback',
+          matchedService:
+            retrieval.matchedService,
+          confidence:
+            retrieval.confidence,
+          source:
+            retrieval.sources[0],
+          allSources:
+            retrieval.sources
+        })
+      }
 
       return res.status(503).json({
         error:

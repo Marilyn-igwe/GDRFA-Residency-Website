@@ -25,6 +25,39 @@ const MAX_SEARCH_RESULTS = 10
 const MAX_SELECTED_SECTIONS = 6
 const MAX_CONTEXT_CHARACTERS = 18000
 
+function isAmbiguousResidenceRenewalQuestion(message) {
+  const value = normalize(message)
+
+  const asksAboutRenewal =
+    /\b(renew|renewal|renewing)\b/.test(value) &&
+    /\b(residence|residency|visa|permit)\b/.test(value)
+
+  const identifiesPermitType =
+    /\b(property|owner|real estate|humanitarian|green|self employment|freelance|investor|partner|family|spouse|wife|husband|child|children|parent|golden|student|employee|employment|work|domestic|dependent)\b/.test(
+      value
+    )
+
+  return asksAboutRenewal && !identifiesPermitType
+}
+
+function isAmbiguousGoldenResidenceQuestion(message) {
+  const value = normalize(message)
+
+  const asksAboutGoldenResidence =
+    /\bgolden\b/.test(value) &&
+    /\b(residence|residency|visa|permit)\b/.test(value)
+
+  const identifiesCategory =
+    /\b(student|graduate|scientist|specialist|doctor|physician|investor|entrepreneur|humanitarian|talent|creative|executive|athlete|inventor|pioneer)\b/.test(
+      value
+    )
+
+  return (
+    asksAboutGoldenResidence &&
+    !identifiesCategory
+  )
+}
+
 const STOP_WORDS = new Set([
   'about',
   'after',
@@ -229,11 +262,17 @@ function extractApplicationContext(message) {
   const question =
     message.split('\n')[0]?.trim() || ''
 
+  const clarification =
+    message.match(
+      /Clarification:\s*([^\n]+)/i
+    )?.[1]?.trim() || ''
+
   return {
     application,
     step,
     visibleDetails,
-    question
+    question,
+    clarification
   }
 }
 
@@ -248,7 +287,9 @@ function createSearchQuery(message) {
 
   const questionTokens =
     expandTokens(
-      tokenize(context.question)
+      tokenize(
+        `${context.question} ${context.clarification}`
+      )
     )
 
   const detailTokens =
@@ -495,6 +536,9 @@ function scoreService(
   const context =
     extractApplicationContext(message)
 
+  const requestText =
+    `${context.question} ${context.clarification}`.trim()
+
   const queryTokens =
     expandTokens(tokenize(message))
 
@@ -527,7 +571,7 @@ function scoreService(
 
   const questionTitleScore =
     phraseSimilarity(
-      context.question,
+      requestText,
       service.name
     ) * 2.5
 
@@ -543,11 +587,92 @@ function scoreService(
       serviceTokens
     )
 
+  const normalizedRequest =
+    normalize(requestText)
+
+  const normalizedTitle =
+    normalize(service.name)
+
+  const asksForFamily =
+    /\b(family|sponsorship|spouse|wife|husband|child|children|dependent)\b/.test(
+      normalizedRequest
+    )
+
+  const asksForHumanitarian =
+    /\b(humanitarian|hardship|medical|committee|exceptional|emergency)\b/.test(
+      normalizedRequest
+    )
+
+  const asksForRenewal =
+    /\b(renew|renewal|renewing)\b/.test(
+      normalizedRequest
+    )
+
+  const familyBonus =
+    asksForFamily &&
+    /\bfamily\b/.test(normalizedTitle)
+      ? 3
+      : 0
+
+  const humanitarianBonus =
+    asksForHumanitarian &&
+    /\bhumanitarian\b/.test(
+      normalizedTitle
+    )
+      ? 8
+      : 0
+
+  const asksForCitizenOrGcc =
+    /\b(citizen|gcc|emirati|national)\b/.test(
+      normalizedRequest
+    )
+
+  const citizenOrGccPenalty =
+    asksForFamily &&
+    !asksForCitizenOrGcc &&
+    /\b(citizen|gcc)\b/.test(
+      normalizedTitle
+    )
+      ? 4
+      : 0
+
+  const foreignResidentBonus =
+    asksForFamily &&
+    !asksForCitizenOrGcc &&
+    /\bforeign residents?\b/.test(
+      normalizedTitle
+    )
+      ? 3
+      : 0
+
+  const humanitarianPenalty =
+    asksForFamily &&
+    !asksForHumanitarian &&
+    /\bhumanitarian\b/.test(
+      normalizedTitle
+    )
+      ? 7
+      : 0
+
+  const issuancePenalty =
+    asksForRenewal &&
+    /\b(issuance|issuing|issue)\b/.test(
+      normalizedTitle
+    )
+      ? 10
+      : 0
+
   return (
     applicationTitleScore +
     questionTitleScore +
     titleCoverage +
-    contentCoverage
+    contentCoverage +
+    familyBonus -
+    citizenOrGccPenalty +
+    foreignResidentBonus +
+    humanitarianBonus -
+    humanitarianPenalty -
+    issuancePenalty
   )
 }
 
@@ -599,37 +724,61 @@ function scoreSection(
 }
 
 async function fetchHtml(url) {
-  const controller =
-    new AbortController()
+  let lastError = null
 
-  const timeout = setTimeout(
-    () => controller.abort(),
-    REQUEST_TIMEOUT_MS
-  )
+  for (
+    let attempt = 0;
+    attempt < 3;
+    attempt++
+  ) {
+    const controller =
+      new AbortController()
 
-  try {
-    const response =
-      await fetch(url, {
-        signal: controller.signal,
+    const timeout = setTimeout(
+      () => controller.abort(),
+      REQUEST_TIMEOUT_MS
+    )
 
-        headers: {
-          Accept: 'text/html',
-          'User-Agent':
-            'GDRFA-Application-Support/1.0'
-        }
-      })
+    try {
+      const response =
+        await fetch(url, {
+          signal: controller.signal,
 
-    if (!response.ok) {
-      throw new Error(
-        `Official site returned ` +
-          `${response.status}`
+          headers: {
+            Accept: 'text/html',
+            'User-Agent':
+              'GDRFA-Application-Support/1.0'
+          }
+        })
+
+      if (!response.ok) {
+        throw new Error(
+          `Official site returned ` +
+            `${response.status}`
+        )
+      }
+
+      return await response.text()
+    } catch (error) {
+      lastError = error
+
+      if (attempt >= 2) {
+        throw error
+      }
+
+      await new Promise(
+        (resolve) =>
+          setTimeout(
+            resolve,
+            750 * (attempt + 1)
+          )
       )
+    } finally {
+      clearTimeout(timeout)
     }
-
-    return response.text()
-  } finally {
-    clearTimeout(timeout)
   }
+
+  throw lastError
 }
 
 function findSectionType(title) {
@@ -924,7 +1073,7 @@ async function searchOfficialWebsite(
 
   const urls = []
 
-  $('a[href*="/en/services/"]').each(
+  $('a[href*="services/"]').each(
     (_, element) => {
       const href =
         $(element).attr('href')
@@ -935,7 +1084,7 @@ async function searchOfficialWebsite(
 
       const url = new URL(
         href,
-        GDRFA_ORIGIN
+        searchUrl
       )
 
       if (
@@ -1147,6 +1296,34 @@ export async function retrieveRelevantServices(
 
   const bestService =
     rankedServices[0]
+
+  if (
+    rankedServices.length > 1 &&
+    isAmbiguousResidenceRenewalQuestion(message)
+  ) {
+    return {
+      available: true,
+      confident: false,
+      reason: 'ambiguous-residence-renewal',
+      confidence: bestService?.score || 0,
+      context: '',
+      sources: []
+    }
+  }
+
+  if (
+    rankedServices.length > 1 &&
+    isAmbiguousGoldenResidenceQuestion(message)
+  ) {
+    return {
+      available: true,
+      confident: false,
+      reason: 'ambiguous-golden-residence',
+      confidence: bestService?.score || 0,
+      context: '',
+      sources: []
+    }
+  }
 
   if (
     !bestService ||

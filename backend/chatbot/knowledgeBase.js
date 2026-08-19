@@ -81,10 +81,17 @@ const staticEntries = [
   },
   {
     id: 'booking-howto',
-    keywords: ['book', 'appointment', 'schedule', 'how do i apply', 'reserve'],
+    keywords: ['book', 'booking', 'appointment', 'schedule', 'apply', 'start', 'begin', 'reserve'],
     answer:
       "You can book an appointment through the 'Start a Service' button on the homepage. Pick your service, choose a date, and I'll show you the least busy center and time so you spend less time waiting.",
     followups: ['What documents will I need to bring?'],
+  },
+  {
+    id: 'application-status-help',
+    keywords: ['application', 'reference', 'tracking', 'progress'],
+    answer:
+      'To check an application or appointment, enter its reference number. Appointment references begin with GDRFA, and humanitarian case references begin with HCASE.',
+    followups: ['How do I book an appointment?'],
   },
   {
     id: 'humanitarian-medical',

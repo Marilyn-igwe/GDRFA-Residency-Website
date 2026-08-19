@@ -255,6 +255,28 @@ function prepareForSpeech(
   )
 }
 
+function isLikelySpeakerEcho(transcript, spokenReply) {
+  const words = (value) =>
+    String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((word) => word.length > 2)
+
+  const heardWords = words(transcript)
+  const replyWords = new Set(words(spokenReply))
+
+  if (heardWords.length < 3 || !replyWords.size) {
+    return false
+  }
+
+  const matchingWords = heardWords.filter(
+    (word) => replyWords.has(word)
+  ).length
+
+  return matchingWords / heardWords.length >= 0.65
+}
+
 function loadSavedMessages() {
   if (
     typeof window ===
@@ -394,6 +416,18 @@ export function ChatWidget() {
   const voiceConversationRef =
     useRef(false)
 
+  const voiceSpeakingRef =
+    useRef(false)
+
+  const voiceResumeTimerRef =
+    useRef(null)
+
+  const voiceResumeNotBeforeRef =
+    useRef(0)
+
+  const lastSpokenReplyRef =
+    useRef('')
+
   useEffect(() => {
     messagesRef.current =
       messages
@@ -511,6 +545,13 @@ export function ChatWidget() {
   }, [open])
 
   function stopAllAudio() {
+    voiceSpeakingRef.current = false
+
+    if (voiceResumeTimerRef.current) {
+      window.clearTimeout(voiceResumeTimerRef.current)
+      voiceResumeTimerRef.current = null
+    }
+
     recognition.cancel()
     tts.cancel()
   }
@@ -523,6 +564,12 @@ export function ChatWidget() {
 
     setVoiceConversation(false)
     recognition.cancel()
+    voiceSpeakingRef.current = false
+
+    if (voiceResumeTimerRef.current) {
+      window.clearTimeout(voiceResumeTimerRef.current)
+      voiceResumeTimerRef.current = null
+    }
 
     if (stopSpeech) {
       tts.cancel()
@@ -575,14 +622,25 @@ export function ChatWidget() {
   }
 
   function scheduleVoiceListening() {
-    window.setTimeout(() => {
+    if (voiceResumeTimerRef.current) {
+      window.clearTimeout(voiceResumeTimerRef.current)
+    }
+
+    const delay = Math.max(
+      250,
+      voiceResumeNotBeforeRef.current - Date.now()
+    )
+
+    voiceResumeTimerRef.current = window.setTimeout(() => {
+      voiceResumeTimerRef.current = null
+
       if (
         !voiceConversationRef
           .current ||
         !openRef.current ||
         chatEndedRef.current ||
         loadingRef.current ||
-        tts.speaking
+        voiceSpeakingRef.current
       ) {
         return
       }
@@ -602,6 +660,17 @@ export function ChatWidget() {
             return
           }
 
+          if (
+            Date.now() < voiceResumeNotBeforeRef.current ||
+            isLikelySpeakerEcho(
+              spokenText,
+              lastSpokenReplyRef.current
+            )
+          ) {
+            scheduleVoiceListening()
+            return
+          }
+
           sendMessage(
             spokenText,
             {
@@ -615,7 +684,7 @@ export function ChatWidget() {
           silenceMs: 1400
         }
       )
-    }, 180)
+    }, delay)
   }
 
   function startVoiceConversation() {
@@ -748,15 +817,28 @@ export function ChatWidget() {
         shouldSpeak &&
         tts.supported
       ) {
-        tts.speak(
+        const spokenReply =
           prepareForSpeech(
             botMessage.text,
             speechLang
-          ),
+          )
+
+        voiceSpeakingRef.current = true
+        voiceResumeNotBeforeRef.current =
+          Number.POSITIVE_INFINITY
+        lastSpokenReplyRef.current =
+          spokenReply
+
+        tts.speak(
+          spokenReply,
           {
             lang: speechLang,
 
             onEnd: () => {
+              voiceSpeakingRef.current = false
+              voiceResumeNotBeforeRef.current =
+                Date.now() + 1200
+
               if (
                 voiceConversationRef
                   .current
@@ -865,6 +947,9 @@ export function ChatWidget() {
 
     if (!nextValue) {
       tts.cancel()
+      voiceSpeakingRef.current = false
+      voiceResumeNotBeforeRef.current =
+        Date.now() + 500
 
       if (
         voiceConversationRef
