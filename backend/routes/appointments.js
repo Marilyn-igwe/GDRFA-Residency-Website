@@ -5,10 +5,38 @@ import {
   incrementBookedCount,
   createAppointment,
   getAppointment,
-  cancelAppointment
+  cancelAppointment,
+  listAppointments,
+  updateAppointmentStatus
 } from '../db.js'
+import { requireStaffAuth } from '../middleware/staffAuth.js'
 
 const router = Router()
+
+const APPOINTMENT_STATUSES = ['confirmed', 'completed', 'no_show', 'cancelled']
+
+// GET /api/appointments — staff-only listing for the employee dashboard.
+// Optional filters via query string: status, centerId, serviceId, date
+// (YYYY-MM-DD), q (matches customer name/email/phone/reference).
+router.get('/appointments', requireStaffAuth, (req, res) => {
+  const { status, centerId, serviceId, date, q } = req.query
+  let results = [...listAppointments()].reverse()
+
+  if (status) results = results.filter((a) => a.status === status)
+  if (centerId) results = results.filter((a) => a.centerId === centerId)
+  if (serviceId) results = results.filter((a) => a.serviceId === serviceId)
+  if (date) results = results.filter((a) => a.date === date)
+  if (q) {
+    const needle = q.toLowerCase()
+    results = results.filter((a) =>
+      [a.customerName, a.customerEmail, a.customerPhone, a.reference]
+        .filter(Boolean)
+        .some((field) => field.toLowerCase().includes(needle))
+    )
+  }
+
+  res.json(results)
+})
 
 // POST /api/appointments
 // body: { serviceId, centerId, date, time, customerName, customerEmail, customerPhone, tierId }
@@ -89,6 +117,20 @@ router.delete('/appointments/:reference', (req, res) => {
     return res.status(404).json({ error: 'Appointment not found or already cancelled' })
   }
   res.json(appointment)
+})
+
+// PATCH /api/appointments/:reference — staff-only status update.
+// body: { status: 'confirmed' | 'completed' | 'no_show' | 'cancelled' }
+// This is how front-desk staff mark a walk-in as done or a no-show
+// without going through the customer-facing cancel flow.
+router.patch('/appointments/:reference', requireStaffAuth, (req, res) => {
+  const { status } = req.body || {}
+  if (!APPOINTMENT_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${APPOINTMENT_STATUSES.join(', ')}` })
+  }
+  const updated = updateAppointmentStatus(req.params.reference, status)
+  if (!updated) return res.status(404).json({ error: 'Appointment not found' })
+  res.json(updated)
 })
 
 export default router

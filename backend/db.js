@@ -74,6 +74,27 @@ export function listAppointments() {
   return store.appointments
 }
 
+// Staff-only status update (confirmed/completed/no_show/cancelled). Only
+// a transition INTO cancelled (from something else) frees the slot —
+// completing or no-show-ing an appointment doesn't, since that visit
+// already happened or the slot's window already passed.
+export function updateAppointmentStatus(reference, status) {
+  const store = loadStore()
+  const appt = store.appointments.find((a) => a.reference === reference)
+  if (!appt) return null
+
+  const previousStatus = appt.status
+  appt.status = status
+  appt.updatedAt = new Date().toISOString()
+  saveStore(store)
+
+  if (status === 'cancelled' && previousStatus !== 'cancelled') {
+    decrementBookedCount(appt.centerId, appt.serviceId, appt.date, appt.time)
+  }
+
+  return appt
+}
+
 export function createHumanitarianCase(caseRecord) {
   const store = loadStore()
   store.humanitarianCases.push(caseRecord)

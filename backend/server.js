@@ -8,6 +8,7 @@ import chatbotRoutes from './routes/chatbot.js'
 import humanitarianRoutes from './routes/humanitarian.js'
 import documentRoutes from './routes/documents.js'
 import familyRoutes from './routes/family.js'
+import staffRoutes from './routes/staff.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -24,6 +25,7 @@ app.use('/api', chatbotRoutes)
 app.use('/api', humanitarianRoutes)
 app.use('/api', documentRoutes)
 app.use('/api', familyRoutes)
+app.use('/api', staffRoutes)
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })

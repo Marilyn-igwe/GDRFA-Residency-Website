@@ -1,8 +1,11 @@
 const API_BASE = import.meta.env.VITE_BOOKING_API || 'http://localhost:4000/api'
 
+import { staffAuthHeaders, notifyStaffUnauthorized } from '../staff/auth'
+
 async function handle(res) {
   const data = await res.json()
   if (!res.ok) {
+    if (res.status === 401) notifyStaffUnauthorized()
     const err = new Error(data.error || 'Request failed')
     err.data = data
     throw err
@@ -35,7 +38,7 @@ export async function submitCase(payload) {
 }
 
 export async function listCases() {
-  return handle(await fetch(`${API_BASE}/humanitarian/cases`))
+  return handle(await fetch(`${API_BASE}/humanitarian/cases`, { headers: staffAuthHeaders() }))
 }
 
 export async function getCase(reference) {
@@ -46,7 +49,7 @@ export async function updateCase(reference, payload) {
   return handle(
     await fetch(`${API_BASE}/humanitarian/cases/${reference}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...staffAuthHeaders() },
       body: JSON.stringify(payload),
     })
   )
@@ -77,6 +80,7 @@ export async function regenerateAiBrief(reference) {
   return handle(
     await fetch(`${API_BASE}/humanitarian/cases/${reference}/ai-brief`, {
       method: 'POST',
+      headers: staffAuthHeaders(),
     })
   )
 }

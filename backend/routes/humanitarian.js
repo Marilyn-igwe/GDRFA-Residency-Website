@@ -5,6 +5,7 @@ import { createCase, getCase, listCases, updateCase, generateCaseReference } fro
 import { generateCaseSummary } from '../humanitarian/summary.js'
 import { assessStatementWithAI, generateAiBrief } from '../humanitarian/aiAssist.js'
 import { verifyDocuments } from '../services/documentAi.js'
+import { requireStaffAuth } from '../middleware/staffAuth.js'
 
 const router = Router()
 
@@ -166,9 +167,7 @@ router.post('/humanitarian/cases', async (req, res) => {
 })
 
 // GET /api/humanitarian/cases — full list for the committee dashboard.
-// NOTE: no auth on this route yet. Add real staff authentication before
-// any real deployment — see README.
-router.get('/humanitarian/cases', (req, res) => {
+router.get('/humanitarian/cases', requireStaffAuth, (req, res) => {
   res.json(listCases())
 })
 
@@ -181,7 +180,7 @@ router.get('/humanitarian/cases/:reference', (req, res) => {
 
 // PATCH /api/humanitarian/cases/:reference
 // body: { status?, committeeNotes? } — committee-driven updates only.
-router.patch('/humanitarian/cases/:reference', (req, res) => {
+router.patch('/humanitarian/cases/:reference', requireStaffAuth, (req, res) => {
   const { status, committeeNotes } = req.body || {}
   const updated = updateCase(req.params.reference, { status, committeeNotes })
   if (!updated) return res.status(404).json({ error: 'Case not found' })
@@ -192,7 +191,7 @@ router.patch('/humanitarian/cases/:reference', (req, res) => {
 // Committee-triggered (re)generation — used when a case predates this
 // feature, or the automatic generation at submission time failed/was
 // skipped (no AI key configured yet, transient error).
-router.post('/humanitarian/cases/:reference/ai-brief', async (req, res) => {
+router.post('/humanitarian/cases/:reference/ai-brief', requireStaffAuth, async (req, res) => {
   const record = getCase(req.params.reference)
   if (!record) return res.status(404).json({ error: 'Case not found' })
 

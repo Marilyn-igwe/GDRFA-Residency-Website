@@ -5,10 +5,8 @@ import gdrfaLogo from './assets/gdrfa-logo.png'
 import { BookingFlow } from './booking/BookingFlow'
 import { ChatWidget } from './chatbot/ChatWidget'
 import { HumanitarianCaseForm } from './humanitarian/HumanitarianCaseForm'
-import { CommitteeDashboard } from './humanitarian/CommitteeDashboard'
 import { FamilyApplicationFlow } from './family/FamilyApplicationFlow'
-import { FamilyCommitteeDashboard } from './family/FamilyCommitteeDashboard'
-import { EmployeeAssistant } from './assistant/EmployeeAssistant'
+import { StaffPortal } from './staff/StaffPortal'
 import { GoalHub } from './components/GoalHub'
 import { LanguageWelcomeScreen } from './language/LanguageWelcomeScreen'
 import { getLanguage } from './language/languages'
@@ -29,6 +27,14 @@ const PORTAL_KEY = 'gdrfa_uaepass_portal_entered'
 
 export function App() {
   const { authenticated, profile, logout } = useUaePass()
+
+  // Staff have their own direct URL and passcode gate — entirely separate
+  // from the citizen-facing language/UAE Pass flow below, so they don't
+  // have to go through either just to reach the dashboard.
+  if (typeof window !== 'undefined' && window.location.pathname.replace(/\/+$/, '') === '/staff') {
+    return <StaffPortal />
+  }
+
   const [languageChosen, setLanguageChosen] = useState(
     () => typeof window !== 'undefined' && localStorage.getItem(LANG_CHOSEN_KEY) === '1'
   )
@@ -36,8 +42,7 @@ export function App() {
     () => (typeof window !== 'undefined' && localStorage.getItem(LANG_CODE_KEY)) || 'en'
   )
   const [showBooking, setShowBooking] = useState(false)
-  const [view, setView] = useState('home') // 'home' | 'humanitarian' | 'committee' | 'family'
-  const [staffTab, setStaffTab] = useState('humanitarian') // 'humanitarian' | 'family' — which staff portal is showing
+  const [view, setView] = useState('home') // 'home' | 'humanitarian' | 'family'
   const [portalEntered, setPortalEntered] = useState(
     () => typeof window !== 'undefined' && sessionStorage.getItem(PORTAL_KEY) === '1'
   )
@@ -117,9 +122,9 @@ export function App() {
     }
   }
 
-  // Built once here and passed down via context so BookingFlow, ChatWidget,
-  // HumanitarianCaseForm and CommitteeDashboard all see the same current
-  // language without needing it threaded through as a prop everywhere.
+  // Built once here and passed down via context so BookingFlow, ChatWidget
+  // and HumanitarianCaseForm all see the same current language without
+  // needing it threaded through as a prop everywhere.
   const langContextValue = buildLanguageContextValue(langCode)
 
   // Text size + high contrast are app-wide, driven by AccessibilityProvider
@@ -130,7 +135,7 @@ export function App() {
     .filter(Boolean)
     .join(' ')
 
-  if (view === 'humanitarian' || view === 'committee' || view === 'family') {
+  if (view === 'humanitarian' || view === 'family') {
     return (
       <LanguageContext.Provider value={langContextValue}>
       <div class={appClass}>
@@ -155,27 +160,10 @@ export function App() {
           </div>
         </header>
 
-        {view === 'committee' && (
-          <div class="staff-tab-bar">
-            <button
-              type="button"
-              class={staffTab === 'humanitarian' ? 'active' : ''}
-              onClick={() => setStaffTab('humanitarian')}
-            >
-              {t.humanitarianTabLabel || 'Humanitarian Cases'}
-            </button>
-            <button type="button" class={staffTab === 'family' ? 'active' : ''} onClick={() => setStaffTab('family')}>
-              {t.familyTabLabel || 'Family Applications'}
-            </button>
-          </div>
-        )}
-
         {view === 'humanitarian' && <HumanitarianCaseForm />}
-        {view === 'committee' && staffTab === 'humanitarian' && <CommitteeDashboard />}
-        {view === 'committee' && staffTab === 'family' && <FamilyCommitteeDashboard />}
         {view === 'family' && <FamilyApplicationFlow />}
-        {view === 'humanitarian' ? <ChatWidget /> : view === 'committee' ? <EmployeeAssistant /> : <ChatWidget />}
-        {view !== 'committee' && <ApplicationSupport />}
+        <ChatWidget />
+        <ApplicationSupport />
         <AccessibilityWidget />
       </div>
       </LanguageContext.Provider>
@@ -361,7 +349,7 @@ export function App() {
                 {link}
               </a>
             ))}
-            <a href="#committee" onClick={(e) => { e.preventDefault(); setView('committee') }}>
+            <a href="/staff">
               {t.committeePortal}
             </a>
           </div>

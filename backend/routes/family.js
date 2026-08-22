@@ -13,6 +13,7 @@ import {
   listFamilyApplications,
   updateFamilyApplication
 } from '../db.js'
+import { requireStaffAuth } from '../middleware/staffAuth.js'
 
 const FAMILY_SERVICE_ID = 'family-residence'
 
@@ -154,7 +155,7 @@ router.post('/family/applications', (req, res) => {
 
 // GET /api/family/applications
 // Staff-only listing — every submitted household, newest first.
-router.get('/family/applications', (req, res) => {
+router.get('/family/applications', requireStaffAuth, (req, res) => {
   const all = listFamilyApplications()
   res.json([...all].reverse())
 })
@@ -168,7 +169,7 @@ router.get('/family/applications/:reference', (req, res) => {
 
 // PATCH /api/family/applications/:reference
 // Staff-only update. body: { status?, staffNotes?, memberStatuses?: [{id, status}] }
-router.patch('/family/applications/:reference', (req, res) => {
+router.patch('/family/applications/:reference', requireStaffAuth, (req, res) => {
   const { status, staffNotes, memberStatuses } = req.body || {}
   const updated = updateFamilyApplication(req.params.reference, { status, staffNotes, memberStatuses })
   if (!updated) return res.status(404).json({ error: 'Family application not found' })
